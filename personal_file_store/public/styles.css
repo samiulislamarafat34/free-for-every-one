@@ -221,19 +221,41 @@ body {
 /* Folder View UI */
 .folder-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 2rem;
-  margin-bottom: 3rem;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
 }
 .folder-card {
-  padding: 2rem 1.5rem;
+  padding: 1.5rem 1rem;
   text-align: center;
+  border-radius: 20px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
-.folder-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,122,255,0.2); border-color: rgba(0,122,255,0.5); }
-.folder-card i { font-size: 4rem; margin-bottom: 1rem; color: var(--primary); filter: drop-shadow(0 4px 10px rgba(0,122,255,0.3)); }
-.folder-card h3 { font-size: 1.1rem; font-weight: 600; }
+.folder-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--primary);
+  box-shadow: 0 10px 30px rgba(0, 122, 255, 0.2);
+}
+.folder-card i {
+  font-size: 3rem;
+  margin-bottom: 0.8rem;
+  color: var(--primary);
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+}
+.folder-card h3 {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+  color: var(--text-main);
+}
 
 /* Universal Uploader */
 .upload-zone {
@@ -325,10 +347,20 @@ body {
 
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
+  .sidebar { 
+    position: fixed; 
+    z-index: 999; 
+    transform: translateX(-100%); 
+    transition: transform 0.3s; 
+    width: 250px;
+  }
   .sidebar.open { transform: translateX(0); }
-  .main-content { margin-left: 0; padding: 1.5rem; }
+  .main-content { margin-left: 0; padding: 1rem; width: 100%; }
   .grid-2 { grid-template-columns: 1fr; }
+  .file-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .file-preview-box { height: 120px; }
+  .folder-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .media-viewer-content audio { width: 90%; }
 }
 
 /* Toast Notifications */
