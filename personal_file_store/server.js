@@ -1,0 +1,324 @@
+const express = require('express');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+require('dotenv').config();
+const session = require('express-session');
+const bcrypt = require('bcryptjs');
+const { Blob } = require('node:buffer');
+const { Readable } = require('node:stream');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Sessions & Active Devices
+const activeSessions = {}; // memory store for active devices
+
+app.set('trust proxy', true);
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'premium-glass-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 24 * 60 * 60 * 1000 }
+}));
+
+app.use(express.static('public'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+const upload = multer({ dest: 'temp/' });
+
+// Helper to parse basic User-Agent
+function parseUA(uaString) {
+  if (!uaString) return "Unknown Device";
+  if (uaString.includes('Windows')) return "Windows PC";
+  if (uaString.includes('Macintosh')) return "Mac";
+  if (uaString.includes('Linux')) return "Linux PC";
+  if (uaString.includes('Android')) return "Android Device";
+  if (uaString.includes('iPhone')) return "iPhone";
+  if (uaString.includes('iPad')) return "iPad";
+  return "Unknown Device";
+}
+
+// -------------------- Data Handlers --------------------
+function loadUsers() {
+  const usersPath = path.join(__dirname, 'data', 'users.json');
+  if (!fs.existsSync(usersPath)) return {};
+  return JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+}
+function saveUsers(users) {
+  fs.writeFileSync(path.join(__dirname, 'data', 'users.json'), JSON.stringify(users, null, 2));
+}
+function isAuthenticated(req) {
+  return req.session && req.session.user;
+}
+function authGuard(req, res, next) {
+  if (isAuthenticated(req)) {
+    // Update last active
+    if (req.session.id && activeSessions[req.session.id]) {
+       activeSessions[req.session.id].lastActive = Date.now();
+    }
+    return next();
+  }
+  return res.status(401).json({ success: false, msg: 'Unauthorized' });
+}
+
+// -------------------- Auth Routes --------------------
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  const users = loadUsers();
+  const user = users[username];
+  
+  if (!user || !bcrypt.compareSync(password, user.passwordHash)) {
+    return res.status(401).json({ success: false, msg: 'Invalid credentials' });
+  }
+
+  req.session.user = { username };
+  
+  // Track device
+  activeSessions[req.session.id] = {
+    username: username,
+    ip: req.ip || req.connection.remoteAddress,
+    device: parseUA(req.headers['user-agent']),
+    loginTime: Date.now(),
+    lastActive: Date.now()
+  };
+
+  res.json({ success: true });
+});
+
+app.get('/logout', (req, res) => {
+  delete activeSessions[req.session.id];
+  req.session.destroy(() => {
+    res.redirect('/login.html');
+  });
+});
+
+app.get('/active-devices', authGuard, (req, res) => {
+  const devices = Object.values(activeSessions).filter(s => s.username === req.session.user.username);
+  res.json({ success: true, devices });
+});
+
+// -------------------- Forgot Password (OTP via Telegram) --------------------
+let currentOtp = null;
+let otpExpires = 0;
+
+app.post('/forgot-password', async (req, res) => {
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  currentOtp = code;
+  otpExpires = Date.now() + 10 * 60000; // 10 mins
+
+  try {
+    const tgUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const tgResp = await fetch(tgUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: process.env.TELEGRAM_CHAT_ID,
+        text: `🔐 *Password Reset Request*\n\nYour OTP is: \`${code}\`\n\nThis code expires in 10 minutes.`,
+        parse_mode: 'Markdown'
+      })
+    });
+    
+    if (tgResp.ok) {
+      res.json({ success: true });
+    } else {
+      res.status(500).json({ success: false, msg: 'Failed to send OTP to Telegram' });
+    }
+  } catch (error) {
+    console.error('Telegram error:', error);
+    res.status(500).json({ success: false, msg: 'Error connecting to Telegram' });
+  }
+});
+
+app.post('/verify-otp', (req, res) => {
+  const { code } = req.body;
+  if (!currentOtp || currentOtp !== code || otpExpires < Date.now()) {
+    return res.status(400).json({ success: false, msg: 'Invalid or expired OTP' });
+  }
+  res.json({ success: true });
+});
+
+app.post('/reset-password', (req, res) => {
+  const { code, newPassword } = req.body;
+  if (!currentOtp || currentOtp !== code || otpExpires < Date.now()) {
+    return res.status(400).json({ success: false, msg: 'Invalid or expired OTP' });
+  }
+  
+  const users = loadUsers();
+  if (users['admin']) {
+    users['admin'].passwordHash = bcrypt.hashSync(newPassword, 10);
+    saveUsers(users);
+  }
+  currentOtp = null;
+  res.json({ success: true });
+});
+
+// -------------------- Universal File Upload --------------------
+function detectFileType(mimetype, filename) {
+  if (mimetype.startsWith('image/')) return 'photo';
+  if (mimetype.startsWith('video/')) return 'video';
+  if (mimetype.startsWith('audio/')) return 'audio';
+  if (mimetype.startsWith('text/') || filename.endsWith('.txt')) return 'text';
+  return 'docs';
+}
+
+app.post('/upload', authGuard, upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, msg: 'No file provided' });
+  
+  const filePath = req.file.path;
+  const originalName = req.file.originalname;
+  const fileType = detectFileType(req.file.mimetype, originalName);
+
+  try {
+    const tgUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendDocument`;
+    const form = new FormData();
+    form.append('chat_id', process.env.TELEGRAM_CHAT_ID);
+    
+    const fileBuffer = fs.readFileSync(filePath);
+    const blob = new Blob([fileBuffer], { type: req.file.mimetype });
+    form.append('document', blob, originalName);
+
+    const tgResp = await fetch(tgUrl, { method: 'POST', body: form });
+    const tgData = await tgResp.json();
+    
+    fs.unlinkSync(filePath); // cleanup
+
+    if (!tgData.ok) {
+      return res.status(500).json({ success: false, msg: 'Telegram upload failed' });
+    }
+
+    const meta = {
+      name: originalName,
+      type: fileType,
+      telegramFileId: tgData.result.document.file_id,
+      size: req.file.size,
+      uploadedAt: Date.now()
+    };
+    
+    const dbPath = path.join(__dirname, 'data', 'files.json');
+    const db = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath, 'utf8')) : [];
+    db.push(meta);
+    fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+
+    res.json({ success: true, file: meta });
+  } catch (error) {
+    if(fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    res.status(500).json({ success: false, msg: 'Upload error' });
+  }
+});
+
+// -------------------- Text Notes (Notepad) --------------------
+app.post('/save-note', authGuard, async (req, res) => {
+  const { title, content } = req.body;
+  if (!content) return res.status(400).json({ success: false });
+  
+  const originalName = `${title || 'note'}_${Date.now()}.txt`;
+  const tmpPath = path.join('temp', originalName);
+  fs.writeFileSync(tmpPath, content);
+  
+  try {
+    const tgUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendDocument`;
+    const form = new FormData();
+    form.append('chat_id', process.env.TELEGRAM_CHAT_ID);
+    
+    const fileBuffer = fs.readFileSync(tmpPath);
+    const blob = new Blob([fileBuffer], { type: 'text/plain' });
+    form.append('document', blob, originalName);
+
+    const tgResp = await fetch(tgUrl, { method: 'POST', body: form });
+    const tgData = await tgResp.json();
+    fs.unlinkSync(tmpPath);
+
+    if (!tgData.ok) return res.status(500).json({ success: false });
+
+    const meta = {
+      name: originalName,
+      type: 'text',
+      telegramFileId: tgData.result.document.file_id,
+      size: content.length,
+      uploadedAt: Date.now()
+    };
+    
+    const dbPath = path.join(__dirname, 'data', 'files.json');
+    const db = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath, 'utf8')) : [];
+    db.push(meta);
+    fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+
+    res.json({ success: true, file: meta });
+  } catch (err) {
+    if(fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+    res.status(500).json({ success: false });
+  }
+});
+
+// -------------------- Files & Download --------------------
+app.get('/files', authGuard, (req, res) => {
+  const dbPath = path.join(__dirname, 'data', 'files.json');
+  const db = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath, 'utf8')) : [];
+  let totalSize = 0;
+  db.forEach(file => { if(file.size) totalSize += file.size; });
+  res.json({ files: db, storageUsed: totalSize });
+});
+
+app.get('/download/:id', authGuard, async (req, res) => {
+  try {
+    const fileId = req.params.id;
+    const getUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/getFile?file_id=${fileId}`;
+    const getResp = await fetch(getUrl);
+    const getRespData = await getResp.json();
+    
+    if (!getRespData.ok) return res.status(404).send('File not found');
+    
+    const fileUrl = `https://api.telegram.org/file/bot${process.env.TELEGRAM_BOT_TOKEN}/${getRespData.result.file_path}`;
+    const tgResp = await fetch(fileUrl);
+    
+    if (tgResp.body) {
+      Readable.fromWeb(tgResp.body).pipe(res);
+    } else {
+      res.status(500).send('Error reading stream');
+    }
+  } catch (err) {
+    res.status(500).send('Internal Error');
+  }
+});
+
+// -------------------- Profile & Profile Picture --------------------
+app.get('/profile', authGuard, (req, res) => {
+  const profilePath = path.join(__dirname, 'data', 'profile.json');
+  const profile = fs.existsSync(profilePath) ? JSON.parse(fs.readFileSync(profilePath, 'utf8')) : {};
+  res.json(profile);
+});
+
+app.post('/profile', authGuard, upload.single('profilePic'), (req, res) => {
+  const profilePath = path.join(__dirname, 'data', 'profile.json');
+  let profile = fs.existsSync(profilePath) ? JSON.parse(fs.readFileSync(profilePath, 'utf8')) : {};
+  
+  // Update data
+  if(req.body.profileData) {
+    const newData = JSON.parse(req.body.profileData);
+    profile = { ...profile, ...newData };
+  }
+  
+  // Handle profile pic locally for speed
+  if(req.file) {
+    const ext = path.extname(req.file.originalname);
+    const picName = `profile_${Date.now()}${ext}`;
+    const targetPath = path.join(__dirname, 'public', 'uploads', picName);
+    
+    if (!fs.existsSync(path.join(__dirname, 'public', 'uploads'))) {
+      fs.mkdirSync(path.join(__dirname, 'public', 'uploads'), { recursive: true });
+    }
+    
+    fs.renameSync(req.file.path, targetPath);
+    profile.profilePicUrl = `/uploads/${picName}`;
+  }
+  
+  fs.writeFileSync(profilePath, JSON.stringify(profile, null, 2));
+  res.json({ success: true, profile });
+});
+
+// Default routes
+app.get('/', (req, res) => res.redirect('/login.html'));
+
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

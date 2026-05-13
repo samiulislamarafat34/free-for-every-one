@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Premium Store - Login</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="login-body">
+
+  <div class="glass login-container">
+    <!-- Analyzing Overlay -->
+    <div id="analyzingOverlay" class="analyzing-overlay">
+      <div class="scanner-ring"></div>
+      <h3 style="color: var(--primary);">Analyzing details...</h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">Securing your connection</p>
+    </div>
+
+    <!-- Login Form -->
+    <i class="fa-solid fa-shield-halved login-logo"></i>
+    <h2 class="animated-title" style="margin-bottom: 0.2rem;">Premium Store</h2>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 2rem;">Secure by Samiul Islam Arafat</p>
+    
+    <form id="loginForm">
+      <div class="form-group">
+        <input type="text" name="username" id="username" class="form-control" placeholder="Username" required autocomplete="off"/>
+      </div>
+      <div class="form-group">
+        <input type="password" name="password" id="password" class="form-control" placeholder="Password" required />
+      </div>
+      <button type="submit" class="btn" style="width: 100%;"><i class="fa-solid fa-fingerprint"></i> Authenticate</button>
+    </form>
+    
+    <div id="loginError" style="display:none; color: var(--danger); margin-top: 1rem; font-weight: 500;">Invalid credentials!</div>
+    
+    <div style="margin-top: 1.5rem;">
+      <button id="forgotPassBtn" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; text-decoration: underline;">Forgot Password?</button>
+    </div>
+  </div>
+
+  <!-- Forgot Password Modal -->
+  <div id="forgotModal" class="modal-overlay">
+    <div class="glass modal-content">
+      <button class="close-modal" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+      
+      <!-- Step 1: Request OTP -->
+      <div id="fp-step-1">
+        <i class="fa-solid fa-shield-halved" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+        <h3 style="margin-bottom: 1rem;">Reset Password</h3>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Receive a 6-digit verification code directly on your Telegram.</p>
+        <button id="sendCodeBtn" class="btn" style="width: 100%;">Send Code to Telegram</button>
+      </div>
+
+      <!-- Step 2: OTP Verify -->
+      <div id="fp-step-2" style="display: none;">
+        <i class="fa-solid fa-shield-halved" style="font-size: 3rem; color: var(--accent); margin-bottom: 1rem;"></i>
+        <h3 style="margin-bottom: 1rem;">Verify Code</h3>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Check your Telegram Bot messages and enter the 6-digit code.</p>
+        <input type="text" id="fp-code" class="form-control" placeholder="000000" maxlength="6" style="margin-bottom: 1rem; text-align: center; letter-spacing: 5px; font-weight: bold; font-size: 1.2rem;">
+        <button id="verifyCodeBtn" class="btn btn-accent" style="width: 100%;">Verify</button>
+      </div>
+
+      <!-- Step 3: New Password -->
+      <div id="fp-step-3" style="display: none;">
+        <i class="fa-solid fa-key" style="font-size: 3rem; color: var(--success); margin-bottom: 1rem;"></i>
+        <h3 style="margin-bottom: 1rem;">New Password</h3>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Create a strong new password.</p>
+        <input type="password" id="fp-newpass" class="form-control" placeholder="New Password" style="margin-bottom: 1rem;">
+        <button id="resetPassBtn" class="btn" style="width: 100%; margin-bottom: 0.5rem;">Update Password</button>
+        <button class="btn btn-outline" style="width: 100%;" onclick="closeModal()">Skip</button>
+      </div>
+
+      <div id="fpError" style="color: var(--danger); margin-top: 1rem; font-size: 0.9rem; display: none;"></div>
+    </div>
+  </div>
+
+  <script>
+    // Show/Hide Modal
+    const modal = document.getElementById('forgotModal');
+    document.getElementById('forgotPassBtn').addEventListener('click', () => {
+      modal.classList.add('active');
+    });
+    window.closeModal = () => {
+      modal.classList.remove('active');
+      document.getElementById('fp-step-1').style.display = 'block';
+      document.getElementById('fp-step-2').style.display = 'none';
+      document.getElementById('fp-step-3').style.display = 'none';
+      document.getElementById('fpError').style.display = 'none';
+    };
+
+    // Forgot Password Logic
+    let currentEmail = '';
+    const fpError = document.getElementById('fpError');
+    const showErr = (msg) => { fpError.innerText = msg; fpError.style.display = 'block'; setTimeout(() => fpError.style.display='none', 3000); };
+
+    document.getElementById('sendCodeBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('sendCodeBtn'); btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...'; btn.disabled = true;
+      try {
+        const res = await fetch('/forgot-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({}) });
+        const data = await res.json();
+        if(data.success) {
+          document.getElementById('fp-step-1').style.display = 'none';
+          document.getElementById('fp-step-2').style.display = 'block';
+        } else showErr(data.msg);
+      } catch(e) { showErr('Network Error'); }
+      btn.innerHTML = 'Send Code to Telegram'; btn.disabled = false;
+    });
+
+    document.getElementById('verifyCodeBtn').addEventListener('click', async () => {
+      const code = document.getElementById('fp-code').value;
+      if(!code) return showErr('Enter code');
+      try {
+        const res = await fetch('/verify-otp', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ code }) });
+        const data = await res.json();
+        if(data.success) {
+          document.getElementById('fp-step-2').style.display = 'none';
+          document.getElementById('fp-step-3').style.display = 'block';
+        } else showErr(data.msg);
+      } catch(e) { showErr('Network Error'); }
+    });
+
+    document.getElementById('resetPassBtn').addEventListener('click', async () => {
+      const newPassword = document.getElementById('fp-newpass').value;
+      const code = document.getElementById('fp-code').value;
+      if(!newPassword) return showErr('Enter password');
+      try {
+        const res = await fetch('/reset-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ code, newPassword }) });
+        const data = await res.json();
+        if(data.success) {
+          closeModal();
+          alert('Password Reset Successful! Please login.');
+        } else showErr(data.msg);
+      } catch(e) { showErr('Network Error'); }
+    });
+
+    // Login Logic
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+      
+      const btn = e.target.querySelector('button[type="submit"]');
+      const ogHtml = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        const result = await res.json();
+        if (result.success) {
+          // Play Analyzing Animation
+          document.getElementById('analyzingOverlay').classList.add('active');
+          setTimeout(() => {
+            window.location.href = '/dashboard.html';
+          }, 2000); // 2 second fake analyzing effect
+        } else {
+          document.getElementById('loginError').style.display = 'block';
+          btn.innerHTML = ogHtml;
+          btn.disabled = false;
+        }
+      } catch (err) {
+        document.getElementById('loginError').style.display = 'block';
+        btn.innerHTML = ogHtml;
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

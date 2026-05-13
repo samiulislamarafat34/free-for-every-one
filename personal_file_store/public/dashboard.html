@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Premium Store - Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar glass" id="sidebar">
+    <div class="sidebar-header">
+      <h2><i class="fa-solid fa-shield-halved"></i> Store</h2>
+    </div>
+    <ul class="nav-links">
+      <li><button class="nav-btn active" data-target="sec-dashboard"><i class="fa-solid fa-house"></i> Home</button></li>
+      <li><button class="nav-btn" data-target="sec-upload"><i class="fa-solid fa-cloud-arrow-up"></i> Upload</button></li>
+      <li><button class="nav-btn" data-target="sec-notepad"><i class="fa-solid fa-pen-nib"></i> Notepad</button></li>
+      <li><button class="nav-btn" data-target="sec-profile"><i class="fa-solid fa-id-card"></i> Profile Info</button></li>
+      <li><button class="nav-btn" data-target="sec-devices"><i class="fa-solid fa-laptop-code"></i> Devices</button></li>
+    </ul>
+    
+    <div class="storage-tracker">
+      <div class="ripple-bg"></div>
+      <div class="storage-content">
+        <h4>Storage Used</h4>
+        <p id="storageAmount">0 MB</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="profile-corner">
+        <img id="topProfilePic" src="https://ui-avatars.com/api/?name=Admin&background=007aff&color=fff" alt="Profile" class="profile-pic-small">
+        <span class="profile-name" id="topProfileName">Admin</span>
+      </div>
+      <button id="themeToggle" class="btn btn-icon glass" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+      <a href="/logout" class="btn btn-danger btn-icon" title="Logout"><i class="fa-solid fa-power-off"></i></a>
+    </header>
+
+    <!-- SECTION: Dashboard (Folder View) -->
+    <section id="sec-dashboard" class="section active">
+      <h1 class="animated-title" style="margin-bottom: 2rem; font-size: 2.5rem;">My Drive</h1>
+      
+      <!-- Folders -->
+      <div id="folderView" class="folder-grid">
+        <div class="glass folder-card" onclick="openFolder('photo')">
+          <i class="fa-solid fa-images"></i>
+          <h3>Photos</h3>
+        </div>
+        <div class="glass folder-card" onclick="openFolder('video')">
+          <i class="fa-solid fa-film"></i>
+          <h3>Videos</h3>
+        </div>
+        <div class="glass folder-card" onclick="openFolder('audio')">
+          <i class="fa-solid fa-music"></i>
+          <h3>Audio</h3>
+        </div>
+        <div class="glass folder-card" onclick="openFolder('docs')">
+          <i class="fa-solid fa-file-pdf"></i>
+          <h3>Documents</h3>
+        </div>
+        <div class="glass folder-card" onclick="openFolder('text')">
+          <i class="fa-solid fa-file-lines"></i>
+          <h3>Notes</h3>
+        </div>
+      </div>
+
+      <!-- File View (Hidden by default) -->
+      <div id="fileView" style="display: none;">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+          <button class="btn btn-icon glass" onclick="closeFolder()"><i class="fa-solid fa-arrow-left"></i></button>
+          <h2 id="currentFolderName">Folder</h2>
+        </div>
+        <div class="file-grid" id="currentFileGrid"></div>
+      </div>
+    </section>
+
+    <!-- SECTION: Universal Upload -->
+    <section id="sec-upload" class="section">
+      <h1 class="animated-title" style="margin-bottom: 2rem; font-size: 2.5rem;">Smart Upload</h1>
+      
+      <div class="glass upload-zone" id="uploadZone">
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        <h3>Drag & Drop files here</h3>
+        <p style="color: var(--text-muted); margin: 1rem 0;">or</p>
+        <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">Browse Files</button>
+        <input type="file" id="fileInput" style="display: none;" multiple>
+      </div>
+      
+      <div id="uploadProgress" style="margin-top: 2rem; display: none;">
+        <h4 style="margin-bottom: 1rem; color: var(--primary);">Uploading... <i class="fa-solid fa-circle-notch fa-spin"></i></h4>
+        <!-- In a real app, we'd use a progress bar, but for now just text -->
+      </div>
+    </section>
+
+    <!-- SECTION: Notepad -->
+    <section id="sec-notepad" class="section">
+      <h1 class="animated-title" style="margin-bottom: 1.5rem; font-size: 2.5rem;">Rich Notepad</h1>
+      
+      <div class="glass" style="padding: 1rem;">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <input type="text" id="noteTitle" class="form-control" placeholder="Note Title...">
+        </div>
+        <div class="editor-toolbar">
+          <button onclick="document.execCommand('bold',false,null)"><i class="fa-solid fa-bold"></i></button>
+          <button onclick="document.execCommand('italic',false,null)"><i class="fa-solid fa-italic"></i></button>
+          <button onclick="document.execCommand('underline',false,null)"><i class="fa-solid fa-underline"></i></button>
+          <button onclick="document.execCommand('insertUnorderedList',false,null)"><i class="fa-solid fa-list-ul"></i></button>
+        </div>
+        <div id="notepad-editor" class="form-control" contenteditable="true" placeholder="Start typing here..."></div>
+        <button id="saveNoteBtn" class="btn" style="margin-top: 1.5rem;"><i class="fa-solid fa-save"></i> Save to Cloud</button>
+      </div>
+    </section>
+
+    <!-- SECTION: Profile Info (Birth Registration Style) -->
+    <section id="sec-profile" class="section">
+      <h1 class="animated-title" style="margin-bottom: 2rem; font-size: 2.5rem;">Identity Details</h1>
+      
+      <div class="glass" style="padding: 2.5rem;">
+        <form id="profileForm">
+          <div class="profile-header">
+            <div class="profile-pic-wrapper">
+              <img id="formProfilePic" src="https://ui-avatars.com/api/?name=Admin" alt="Profile" class="profile-pic-large">
+              <button type="button" class="profile-pic-upload-btn" onclick="document.getElementById('picInput').click()"><i class="fa-solid fa-camera"></i></button>
+              <input type="file" id="picInput" accept="image/*" style="display: none;">
+            </div>
+            <div>
+              <h2 id="formProfileName">Admin User</h2>
+              <p style="color: var(--text-muted);">Manage your personal identity data</p>
+            </div>
+          </div>
+          
+          <h3 style="color: var(--primary); margin: 2rem 0 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">Personal Identity</h3>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" id="p_fullname" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Birth Certificate / NID No.</label>
+              <input type="text" id="p_nid" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Date of Birth</label>
+              <input type="date" id="p_dob" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Gender</label>
+              <select id="p_gender" class="form-control" style="appearance: none;">
+                <option value="">Select...</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <h3 style="color: var(--primary); margin: 2rem 0 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">Parental Information</h3>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Father's Name</label>
+              <input type="text" id="p_father" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Mother's Name</label>
+              <input type="text" id="p_mother" class="form-control">
+            </div>
+          </div>
+
+          <h3 style="color: var(--primary); margin: 2rem 0 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">Address</h3>
+          <div class="form-group">
+            <label>Present Address</label>
+            <textarea id="p_present_addr" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Permanent Address</label>
+            <textarea id="p_permanent_addr" class="form-control" rows="2"></textarea>
+          </div>
+
+          <button type="submit" id="saveProfileBtn" class="btn" style="margin-top: 1rem;"><i class="fa-solid fa-cloud-arrow-up"></i> Update Identity</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- SECTION: Active Devices -->
+    <section id="sec-devices" class="section">
+      <h1 class="animated-title" style="margin-bottom: 2rem; font-size: 2.5rem;">Active Sessions</h1>
+      <div class="glass" style="padding: 2.5rem;">
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Review devices currently logged into your account.</p>
+        <div id="deviceList" class="device-list">
+          <!-- Devices injected by JS -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Upload Toast Notification -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Custom Context Menu -->
+  <div id="customContextMenu" class="context-menu glass">
+    <button class="menu-item" id="menuViewDetails"><i class="fa-solid fa-circle-info"></i> View Details</button>
+    <button class="menu-item" id="menuOpenTab"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open in New Tab</button>
+    <div class="menu-divider"></div>
+    <button class="menu-item text-danger" id="menuDownload"><i class="fa-solid fa-cloud-arrow-down"></i> Download</button>
+  </div>
+
+  <!-- Metadata Modal -->
+  <div id="metaModal" class="modal-overlay">
+    <div class="glass modal-content" style="max-width: 400px;">
+      <button class="close-modal" onclick="closeMetaModal()"><i class="fa-solid fa-xmark"></i></button>
+      <i class="fa-solid fa-circle-info" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 1rem;"></i>
+      <h3 style="margin-bottom: 1.5rem;">File Details</h3>
+      
+      <div style="text-align: left; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
+        <p style="margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">Filename</p>
+        <p id="metaFilename" style="font-weight: 600; word-break: break-all; margin-bottom: 1rem;">-</p>
+        
+        <p style="margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">Type</p>
+        <p id="metaType" style="font-weight: 600; margin-bottom: 1rem; text-transform: capitalize;">-</p>
+        
+        <p style="margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">Size</p>
+        <p id="metaSize" style="font-weight: 600; margin-bottom: 1rem;">-</p>
+        
+        <p style="margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">Uploaded At</p>
+        <p id="metaDate" style="font-weight: 600;">-</p>
+      </div>
+      <button class="btn btn-outline" style="width: 100%;" onclick="closeMetaModal()">Close</button>
+    </div>
+  </div>
+
+  <!-- Media Viewer Modal (Lightbox) -->
+  <div id="mediaViewerModal" class="media-viewer-overlay">
+    <div class="media-viewer-header">
+      <div class="media-viewer-title" id="mediaViewerTitle">Filename.jpg</div>
+      <div class="media-viewer-actions">
+        <button id="mediaViewerNewTab" class="btn btn-icon btn-outline" title="Open in New Tab"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+        <button id="mediaViewerDownload" class="btn btn-icon btn-accent" title="Download"><i class="fa-solid fa-download"></i></button>
+        <button class="btn btn-icon btn-danger" onclick="closeMediaViewer()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+    <div class="media-viewer-content" id="mediaViewerContent">
+      <!-- Media will be injected here -->
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

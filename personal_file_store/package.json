@@ -1,0 +1,21 @@
+{
+  "name": "personal-file-store",
+  "version": "1.0.0",
+  "description": "Premium web app for personal file storage using Telegram Bot as backend storage",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-session": "^1.19.0",
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^3.3.2",
+    "nodemailer": "^8.0.7"
+  }
+}
