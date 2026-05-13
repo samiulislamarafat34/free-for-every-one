@@ -45,10 +45,14 @@
 
     <!-- SECTION: Dashboard (Folder View) -->
     <section id="sec-dashboard" class="section active">
-      <h1 class="animated-title" style="margin-bottom: 2rem; font-size: 2.5rem;">My Drive</h1>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1 class="animated-title" style="margin: 0; font-size: 2.5rem;">My Drive</h1>
+        <button class="btn btn-outline" onclick="openCreateFolderModal()"><i class="fa-solid fa-folder-plus"></i> New Folder</button>
+      </div>
       
       <!-- Folders -->
       <div id="folderView" class="folder-grid">
+        <!-- Default Folders -->
         <div class="glass folder-card" onclick="openFolder('photo')">
           <i class="fa-solid fa-images"></i>
           <h3>Photos</h3>
@@ -207,6 +211,7 @@
   <!-- Custom Context Menu -->
   <div id="customContextMenu" class="context-menu glass">
     <button class="menu-item" id="menuViewDetails"><i class="fa-solid fa-circle-info"></i> View Details</button>
+    <button class="menu-item" id="menuRename"><i class="fa-solid fa-pen-to-square"></i> Rename</button>
     <button class="menu-item" id="menuOpenTab"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open in New Tab</button>
     <div class="menu-divider"></div>
     <button class="menu-item text-danger" id="menuDownload"><i class="fa-solid fa-cloud-arrow-down"></i> Download</button>
@@ -236,6 +241,30 @@
     </div>
   </div>
 
+  <!-- Rename Modal -->
+  <div id="renameModal" class="modal-overlay">
+    <div class="glass modal-content" style="max-width: 400px;">
+      <h3 style="margin-bottom: 1rem;">Rename File</h3>
+      <input type="text" id="renameInput" class="form-control" style="margin-bottom: 1rem;">
+      <div style="display: flex; gap: 1rem;">
+        <button class="btn btn-outline" style="flex: 1;" onclick="closeRenameModal()">Cancel</button>
+        <button class="btn" id="confirmRenameBtn" style="flex: 1;">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Folder Modal -->
+  <div id="createFolderModal" class="modal-overlay">
+    <div class="glass modal-content" style="max-width: 400px;">
+      <h3 style="margin-bottom: 1rem;">New Folder</h3>
+      <input type="text" id="folderNameInput" class="form-control" placeholder="Folder Name" style="margin-bottom: 1rem;">
+      <div style="display: flex; gap: 1rem;">
+        <button class="btn btn-outline" style="flex: 1;" onclick="closeCreateFolderModal()">Cancel</button>
+        <button class="btn" id="confirmCreateFolderBtn" style="flex: 1;">Create</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Media Viewer Modal (Lightbox) -->
   <div id="mediaViewerModal" class="media-viewer-overlay">
     <div class="media-viewer-header">
@@ -245,6 +274,7 @@
         <button id="mediaViewerDownload" class="btn btn-icon btn-accent" title="Download"><i class="fa-solid fa-download"></i></button>
         <button class="btn btn-icon btn-danger" onclick="closeMediaViewer()"><i class="fa-solid fa-xmark"></i></button>
       </div>
+
     </div>
     <div class="media-viewer-content" id="mediaViewerContent">
       <!-- Media will be injected here -->
