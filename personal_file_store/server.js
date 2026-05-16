@@ -617,4 +617,10 @@ app.get('/my-files', authGuard, async (req, res) => {
   res.json({ files: allFiles });
 });
 
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+// Export for Vercel serverless
+module.exports = app;
+
+// Local development only
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+}
