@@ -329,19 +329,28 @@ app.post('/upload', authGuard, upload.single('file'), async (req, res) => {
       return res.status(500).json({ success: false, msg: 'Telegram upload failed' });
     }
 
+    const fileType = req.file.mimetype.split('/')[0];
+    let cat = 'docs';
+    if (fileType === 'image') cat = 'photo';
+    else if (fileType === 'video') cat = 'video';
+    else if (fileType === 'audio') cat = 'audio';
+    else if (req.file.mimetype.includes('text') || originalName.endsWith('.txt')) cat = 'text';
+
     const meta = {
+      id: Date.now().toString(),
       name: originalName,
-      type: fileType,
+      type: cat,
       telegramFileId: tgData.result.document.file_id,
       size: req.file.size,
+      folderId: req.body.folderId || null,
       uploadedAt: Date.now(),
-      username: req.session.user.username // Store username with file
+      username: req.session.user.username
     };
 
     const dbPath = path.join(__dirname, 'data', 'files.json');
     const db = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath, 'utf8')) : [];
     db.push(meta);
-    fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+    saveFiles(db);
 
     res.json({ success: true, file: meta });
   } catch (error) {
@@ -380,6 +389,7 @@ app.post('/save-note', authGuard, async (req, res) => {
     if (!tgData.ok) return res.status(500).json({ success: false });
 
     const meta = {
+      id: Date.now().toString(),
       name: originalName,
       type: 'text',
       telegramFileId: tgData.result.document.file_id,
@@ -387,10 +397,9 @@ app.post('/save-note', authGuard, async (req, res) => {
       uploadedAt: Date.now()
     };
     
-    const dbPath = path.join(__dirname, 'data', 'files.json');
-    const db = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath, 'utf8')) : [];
+    const db = loadFiles();
     db.push(meta);
-    fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+    saveFiles(db);
 
     res.json({ success: true, file: meta });
   } catch (err) {
@@ -401,6 +410,7 @@ app.post('/save-note', authGuard, async (req, res) => {
 
 // -------------------- Files & Download --------------------
 app.get('/files', authGuard, (req, res) => {
+<<<<<<< HEAD
   const dbPath = path.join(__dirname, 'data', 'files.json');
   const allFiles = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath, 'utf8')) : [];
 
@@ -413,9 +423,42 @@ app.get('/files', authGuard, (req, res) => {
   res.json({ files: userFiles, storageUsed: totalSize });
 });
 
+app.get('/folders', authGuard, (req, res) => {
+  const foldersPath = path.join(__dirname, 'data', 'folders.json');
+  const folders = fs.existsSync(foldersPath) ? JSON.parse(fs.readFileSync(foldersPath, 'utf8')) : [];
+  res.json({ folders });
+});
+
+app.post('/folders', authGuard, (req, res) => {
+  const { name, type } = req.body;
+  if (!name) return res.status(400).json({ success: false });
+  const foldersPath = path.join(__dirname, 'data', 'folders.json');
+  let folders = fs.existsSync(foldersPath) ? JSON.parse(fs.readFileSync(foldersPath, 'utf8')) : [];
+  const newFolder = { id: Date.now().toString(), name, type, createdAt: Date.now() };
+  folders.push(newFolder);
+  fs.writeFileSync(foldersPath, JSON.stringify(folders, null, 2));
+  res.json({ success: true, folder: newFolder });
+});
+
+app.post('/rename', authGuard, (req, res) => {
+  const { id, newName } = req.body;
+  const files = loadFiles();
+  const file = files.find(f => f.telegramFileId === id || f.id === id);
+  if (!file) return res.status(404).json({ success: false });
+  file.name = newName;
+  saveFiles(files);
+  res.json({ success: true });
+>>>>>>> 3ad689e8d46a1b9f937c0c36de999762a39cb0f8
+});
+
 app.get('/download/:id', authGuard, async (req, res) => {
   try {
     const fileId = req.params.id;
+    const isInline = req.query.inline === 'true';
+    const files = loadFiles();
+    const fileMeta = files.find(f => f.telegramFileId === fileId);
+    const fileName = fileMeta ? fileMeta.name : 'downloaded_file';
+
     const getUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/getFile?file_id=${fileId}`;
     const getResp = await fetch(getUrl);
     const getRespData = await getResp.json();
@@ -423,7 +466,33 @@ app.get('/download/:id', authGuard, async (req, res) => {
     if (!getRespData.ok) return res.status(404).send('File not found');
     
     const fileUrl = `https://api.telegram.org/file/bot${process.env.TELEGRAM_BOT_TOKEN}/${getRespData.result.file_path}`;
-    const tgResp = await fetch(fileUrl);
+    
+    // Support HTTP Range Requests for Video seeking
+    const fetchOptions = { headers: {} };
+    if (req.headers.range) {
+      fetchOptions.headers['Range'] = req.headers.range;
+    }
+    
+    const tgResp = await fetch(fileUrl, fetchOptions);
+    
+    // Forward headers
+    res.status(tgResp.status);
+    const contentType = tgResp.headers.get('content-type');
+    if (contentType) res.setHeader('Content-Type', contentType);
+    
+    const contentLength = tgResp.headers.get('content-length');
+    if (contentLength) res.setHeader('Content-Length', contentLength);
+    
+    const contentRange = tgResp.headers.get('content-range');
+    if (contentRange) res.setHeader('Content-Range', contentRange);
+    
+    res.setHeader('Accept-Ranges', 'bytes');
+    
+    if (isInline) {
+      res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+    } else {
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    }
     
     if (tgResp.body) {
       Readable.fromWeb(tgResp.body).pipe(res);

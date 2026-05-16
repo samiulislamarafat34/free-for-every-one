@@ -56,15 +56,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ---- Global Variables ----
   let allFiles = [];
+  let customFolders = [];
   let currentContextMenuFile = null;
 
-  // ---- Load Files & Storage ----
+  // ---- Load Files & Folders ----
   async function loadFiles() {
     try {
       const res = await fetch('/files');
       if(res.status === 401) { window.location.href = '/login.html'; return; }
       const data = await res.json();
       allFiles = data.files || [];
+      customFolders = data.folders || [];
       
       const storageBytes = data.storageUsed || 0;
       document.getElementById('storageAmount').innerText = formatBytes(storageBytes);
@@ -73,27 +75,77 @@ document.addEventListener('DOMContentLoaded', () => {
       const percentage = Math.min((storageBytes / MAX_STORAGE) * 100, 100);
       document.querySelector('.ripple-bg').style.height = `${percentage + 10}%`;
 
+      renderFolders();
+
       if (document.getElementById('fileView').style.display === 'block') {
         openFolder(currentFolderType);
       }
     } catch (err) { console.error('Load files err', err); }
   }
 
+  function renderFolders() {
+    const grid = document.getElementById('folderView');
+    // keep default folders intact, just remove custom ones and re-add
+    const defaultFoldersHtml = `
+      <div class="glass folder-card" onclick="openFolder('photo')">
+        <i class="fa-solid fa-images"></i>
+        <h3>Photos</h3>
+      </div>
+      <div class="glass folder-card" onclick="openFolder('video')">
+        <i class="fa-solid fa-film"></i>
+        <h3>Videos</h3>
+      </div>
+      <div class="glass folder-card" onclick="openFolder('audio')">
+        <i class="fa-solid fa-music"></i>
+        <h3>Audio</h3>
+      </div>
+      <div class="glass folder-card" onclick="openFolder('docs')">
+        <i class="fa-solid fa-file-pdf"></i>
+        <h3>Documents</h3>
+      </div>
+      <div class="glass folder-card" onclick="openFolder('text')">
+        <i class="fa-solid fa-file-lines"></i>
+        <h3>Notes</h3>
+      </div>
+    `;
+    let customHtml = '';
+    customFolders.forEach(folder => {
+      customHtml += `
+        <div class="glass folder-card" onclick="openFolder('${folder.id}', true)">
+          <i class="fa-solid ${folder.icon}"></i>
+          <h3>${folder.name}</h3>
+        </div>
+      `;
+    });
+    grid.innerHTML = defaultFoldersHtml + customHtml;
+  }
+
   // ---- Folder Navigation & Thumbnails ----
   let currentFolderType = '';
-  window.openFolder = (type) => {
+  window.openFolder = (type, isCustom = false) => {
     currentFolderType = type;
     document.getElementById('folderView').style.display = 'none';
     const fileView = document.getElementById('fileView');
     fileView.style.display = 'block';
     
-    const titles = { photo: 'Photos', video: 'Videos', audio: 'Audio', docs: 'Documents', text: 'Notes' };
-    document.getElementById('currentFolderName').innerText = titles[type] || 'Files';
+    if (isCustom) {
+      const cFolder = customFolders.find(f => f.id === type);
+      document.getElementById('currentFolderName').innerText = cFolder ? cFolder.name : 'Folder';
+    } else {
+      const titles = { photo: 'Photos', video: 'Videos', audio: 'Audio', docs: 'Documents', text: 'Notes' };
+      document.getElementById('currentFolderName').innerText = titles[type] || 'Files';
+    }
     
     const grid = document.getElementById('currentFileGrid');
     grid.innerHTML = '';
     
-    const filteredFiles = allFiles.filter(f => f.type === type);
+    let filteredFiles = [];
+    if (isCustom) {
+      filteredFiles = allFiles.filter(f => f.folderId === type);
+    } else {
+      filteredFiles = allFiles.filter(f => f.type === type && !f.folderId);
+    }
+
     if (filteredFiles.length === 0) {
       grid.innerHTML = `<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center;">No files in this folder.</p>`;
       return;
@@ -170,15 +222,72 @@ document.addEventListener('DOMContentLoaded', () => {
     a.click();
   });
 
+  // ---- Rename Logic ----
+  document.getElementById('menuRename').addEventListener('click', () => {
+    if(!currentContextMenuFile) return;
+    document.getElementById('renameInput').value = currentContextMenuFile.name;
+    document.getElementById('renameModal').classList.add('active');
+  });
+
+  window.closeRenameModal = () => document.getElementById('renameModal').classList.remove('active');
+
+  document.getElementById('confirmRenameBtn').addEventListener('click', async () => {
+    const newName = document.getElementById('renameInput').value;
+    if (!newName) return;
+    
+    const btn = document.getElementById('confirmRenameBtn');
+    btn.innerHTML = 'Saving...'; btn.disabled = true;
+    
+    try {
+      const res = await fetch('/rename', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: currentContextMenuFile.telegramFileId, newName })
+      });
+      if(res.ok) {
+        showToast('File Renamed', 'success');
+        await loadFiles();
+        closeRenameModal();
+      }
+    } catch(e) { showToast('Rename Error', 'error'); }
+    btn.innerHTML = 'Save'; btn.disabled = false;
+  });
+
+  // ---- Create Folder Logic ----
+  window.openCreateFolderModal = () => document.getElementById('createFolderModal').classList.add('active');
+  window.closeCreateFolderModal = () => document.getElementById('createFolderModal').classList.remove('active');
+
+  document.getElementById('confirmCreateFolderBtn').addEventListener('click', async () => {
+    const name = document.getElementById('folderNameInput').value;
+    if (!name) return;
+    
+    const btn = document.getElementById('confirmCreateFolderBtn');
+    btn.innerHTML = 'Creating...'; btn.disabled = true;
+    
+    try {
+      const res = await fetch('/folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      if(res.ok) {
+        showToast('Folder Created', 'success');
+        document.getElementById('folderNameInput').value = '';
+        await loadFiles();
+        closeCreateFolderModal();
+      }
+    } catch(e) { showToast('Error creating folder', 'error'); }
+    btn.innerHTML = 'Create'; btn.disabled = false;
+  });
+
   // ---- Media Viewer (Lightbox) ----
   const mediaViewerModal = document.getElementById('mediaViewerModal');
   const mediaViewerContent = document.getElementById('mediaViewerContent');
   
   function openMediaViewer(file, url) {
     document.getElementById('mediaViewerTitle').innerText = file.name;
-    document.getElementById('mediaViewerNewTab').onclick = () => window.open(url, '_blank');
+    document.getElementById('mediaViewerNewTab').onclick = () => window.open(`${url}?inline=true`, '_blank');
     
-    // Set up download button logic explicitly to bypass internal browser viewing if possible
     document.getElementById('mediaViewerDownload').onclick = () => {
       const a = document.createElement('a');
       a.href = url;
@@ -188,15 +297,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let contentHtml = '';
     if (file.type === 'photo') {
-      contentHtml = `<img src="${url}" alt="${file.name}">`;
+      contentHtml = `<img src="${url}?inline=true" alt="${file.name}">`;
     } else if (file.type === 'video') {
-      contentHtml = `<video src="${url}" controls autoplay></video>`;
+      contentHtml = `<video src="${url}?inline=true" controls autoplay></video>`;
     } else if (file.type === 'audio') {
-      contentHtml = `<audio src="${url}" controls autoplay></audio>`;
+      contentHtml = `<audio src="${url}?inline=true" controls autoplay></audio>`;
     } else {
-      // For docs/texts, just open in new tab
-      window.open(url, '_blank');
-      return;
+      contentHtml = `<iframe src="${url}?inline=true" style="width:100%; height:80vh; border:none; border-radius:12px; background:white;"></iframe>`;
     }
 
     mediaViewerContent.innerHTML = contentHtml;
@@ -228,6 +335,12 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast(`Uploading ${files[i].name}...`, 'info');
       const formData = new FormData();
       formData.append('file', files[i]);
+      
+      // If currently inside a custom folder, append folderId
+      if (currentFolderType && customFolders.find(f => f.id === currentFolderType)) {
+        formData.append('folderId', currentFolderType);
+      }
+      
       try {
         const res = await fetch('/upload', { method: 'POST', body: formData });
         if(res.ok) {
