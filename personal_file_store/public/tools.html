@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amanat - টুলস</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .tool-input { width: 100%; padding: 14px 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-main); font-size: 16px; font-family: inherit; }
+    .tool-input:focus { outline: none; border-color: var(--primary); }
+    .tool-result { padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-top: 16px; }
+    .tool-result h4 { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+    .tool-result .value { font-size: 24px; font-weight: 700; }
+  </style>
+</head>
+<body class="landing-body">
+  <div class="orb-container">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+  </div>
+
+  <div class="notes-container">
+    <h1 style="margin-bottom: 10px;">
+      <i class="fas fa-tools" style="background: linear-gradient(135deg, #9c27b0, #673ab7); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+      টুলস
+    </h1>
+    <p style="color: var(--text-muted); margin-bottom: 30px;">দরকারি টুলস</p>
+
+    <div class="tools-grid">
+      <!-- Calculator -->
+      <div class="tool-card glass">
+        <h3><i class="fas fa-calculator"></i> ক্যালকুলেটর</h3>
+        <input type="text" id="calcDisplay" class="tool-input" readonly style="text-align: right; font-size: 24px; font-family: monospace;">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px;">
+          <button class="btn btn-outline" onclick="calc('C')">C</button>
+          <button class="btn btn-outline" onclick="calc('(')">(</button>
+          <button class="btn btn-outline" onclick="calc(')')">)</button>
+          <button class="btn btn-outline" onclick="calc('/')">÷</button>
+          <button class="btn btn-outline" onclick="calc('7')">৭</button>
+          <button class="btn btn-outline" onclick="calc('8')">৮</button>
+          <button class="btn btn-outline" onclick="calc('9')">৯</button>
+          <button class="btn btn-outline" onclick="calc('*')">×</button>
+          <button class="btn btn-outline" onclick="calc('4')">৪</button>
+          <button class="btn btn-outline" onclick="calc('5')">৫</button>
+          <button class="btn btn-outline" onclick="calc('6')">৬</button>
+          <button class="btn btn-outline" onclick="calc('-')">-</button>
+          <button class="btn btn-outline" onclick="calc('1')">১</button>
+          <button class="btn btn-outline" onclick="calc('2')">২</button>
+          <button class="btn btn-outline" onclick="calc('3')">৩</button>
+          <button class="btn btn-outline" onclick="calc('+')">+</button>
+          <button class="btn btn-outline" onclick="calc('0')">০</button>
+          <button class="btn btn-outline" onclick="calc('.')">.</button>
+          <button class="btn btn-outline" onclick="calcBS()">⌫</button>
+          <button class="btn btn-primary" onclick="calc('=')">=</button>
+        </div>
+      </div>
+
+      <!-- Password Generator -->
+      <div class="tool-card glass">
+        <h3><i class="fas fa-key"></i> পাসওয়ার্ড জেনারেটর</h3>
+        <div style="display: flex; gap: 12px; margin-bottom: 16px; align-items: center;">
+          <input type="number" id="passLength" value="16" class="tool-input" style="width: 80px;">
+          <span style="color: var(--text-muted);">অক্ষর</span>
+        </div>
+        <div style="margin-bottom: 16px;">
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 8px;">
+            <input type="checkbox" id="passUpper" checked> বড় হাতের (A-Z)
+          </label>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 8px;">
+            <input type="checkbox" id="passLower" checked> ছোট হাতের (a-z)
+          </label>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 8px;">
+            <input type="checkbox" id="passNum" checked> সংখ্যা (0-9)
+          </label>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+            <input type="checkbox" id="passSym" checked> চিহ্ন (!@#$)
+          </label>
+        </div>
+        <button class="btn btn-primary" style="width: 100%;" onclick="genPass()">
+          <i class="fas fa-sync"></i> জেনারেট
+        </button>
+        <div class="tool-result">
+          <h4>পাসওয়ার্ড</h4>
+          <div class="value" id="genPass" style="font-size: 14px; word-break: break-all;">—</div>
+        </div>
+        <button class="btn btn-outline" style="width: 100%; margin-top: 12px;" onclick="copyPass()">
+          <i class="fas fa-copy"></i> কপি
+        </button>
+      </div>
+
+      <!-- Color Picker -->
+      <div class="tool-card glass">
+        <h3><i class="fas fa-palette"></i> কালার পিকার</h3>
+        <input type="color" id="colorPicker" value="#667eea" style="width: 100%; height: 60px; border: none; border-radius: 12px; cursor: pointer;">
+        <div class="tool-result">
+          <h4>কালার কোড</h4>
+          <div class="value" id="colorCode">#667eea</div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 12px;">
+          <button class="btn btn-outline" style="flex: 1;" onclick="copyColor('hex')">HEX</button>
+          <button class="btn btn-outline" style="flex: 1;" onclick="copyColor('rgb')">RGB</button>
+        </div>
+      </div>
+
+      <!-- Word Counter -->
+      <div class="tool-card glass">
+        <h3><i class="fas fa-text-width"></i> ওয়ার্ড কাউন্টার</h3>
+        <textarea id="wordText" class="tool-input" placeholder="টেক্সট লিখুন..." style="min-height: 120px; resize: vertical;"></textarea>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px;">
+          <div class="tool-result" style="padding: 12px; text-align: center;">
+            <h4>শব্দ</h4>
+            <div class="value" id="wordCount">০</div>
+          </div>
+          <div class="tool-result" style="padding: 12px; text-align: center;">
+            <h4>অক্ষর</h4>
+            <div class="value" id="charCount">০</div>
+          </div>
+          <div class="tool-result" style="padding: 12px; text-align: center;">
+            <h4>লাইন</h4>
+            <div class="value" id="lineCount">০</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Unit Converter -->
+      <div class="tool-card glass">
+        <h3><i class="fas fa-exchange-alt"></i> ইউনিট কনভার্টার</h3>
+        <input type="number" id="unitInput" class="tool-input" placeholder="পরিমাণ লিখুন" oninput="convertUnit()">
+        <select id="unitType" class="tool-input" style="margin-top: 12px;" onchange="convertUnit()">
+          <option value="length">দৈর্ঘ্য (মিটার → ফুট)</option>
+          <option value="weight">ওজন (কেজি → পাউন্ড)</option>
+          <option value="temp">তাপমাত্রা (°C → °F)</option>
+        </select>
+        <div class="tool-result">
+          <h4>ফলাফল</h4>
+          <div class="value" id="unitResult">—</div>
+        </div>
+      </div>
+
+      <!-- QR Code -->
+      <div class="tool-card glass">
+        <h3><i class="fas fa-qrcode"></i> QR কোড জেনারেটর</h3>
+        <input type="text" id="qrText" class="tool-input" placeholder="লিংক বা টেক্সট">
+        <button class="btn btn-primary" style="width: 100%; margin-top: 12px;" onclick="genQR()">
+          <i class="fas fa-qrcode"></i> তৈরি
+        </button>
+        <div class="tool-result" id="qrResult" style="text-align: center; min-height: 120px; display: flex; align-items: center; justify-content: center;">
+          <i class="fas fa-qrcode" style="font-size: 60px; opacity: 0.3;"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="nav-bar glass">
+    <a href="/dashboard.html" class="nav-item">
+      <i class="fas fa-home"></i>
+      <span>ড্যাশবোর্ড</span>
+    </a>
+    <a href="/storage.html" class="nav-item">
+      <i class="fas fa-folder"></i>
+      <span>স্টোরেজ</span>
+    </a>
+    <a href="/notes.html" class="nav-item">
+      <i class="fas fa-sticky-note"></i>
+      <span>নোটস</span>
+    </a>
+    <a href="/tools.html" class="nav-item active">
+      <i class="fas fa-tools"></i>
+      <span>টুলস</span>
+    </a>
+    <a href="/profile.html" class="nav-item">
+      <i class="fas fa-user"></i>
+      <span>প্রোফাইল</span>
+    </a>
+  </nav>
+
+  <script src="animations.js"></script>
+  <script>
+    // Calculator
+    let calcVal = '';
+    function calc(v) {
+      if (v === 'C') { calcVal = ''; }
+      else if (v === '=') { try { calcVal = eval(calcVal).toString(); } catch { calcVal = 'Error'; } }
+      else calcVal += v;
+      document.getElementById('calcDisplay').value = calcVal || '0';
+    }
+    function calcBS() { calcVal = calcVal.slice(0, -1); document.getElementById('calcDisplay').value = calcVal || '0'; }
+
+    // Password Generator
+    function genPass() {
+      const len = parseInt(document.getElementById('passLength').value) || 16;
+      let chars = '';
+      if (document.getElementById('passUpper').checked) chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      if (document.getElementById('passLower').checked) chars += 'abcdefghijklmnopqrstuvwxyz';
+      if (document.getElementById('passNum').checked) chars += '0123456789';
+      if (document.getElementById('passSym').checked) chars += '!@#$%^&*()_+-=';
+      if (!chars) return alert('অন্তত একটি অপশন সিলেক্ট করুন');
+      let pass = '';
+      for (let i = 0; i < len; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+      document.getElementById('genPass').textContent = pass;
+    }
+    function copyPass() { navigator.clipboard.writeText(document.getElementById('genPass').textContent); showToast('কপি হয়েছে!', 'success'); }
+
+    // Color Picker
+    document.getElementById('colorPicker').addEventListener('input', function() {
+      document.getElementById('colorCode').textContent = this.value.toUpperCase();
+    });
+    function copyColor(type) {
+      const hex = document.getElementById('colorPicker').value;
+      if (type === 'hex') { navigator.clipboard.writeText(hex.toUpperCase()); showToast('HEX কপি!', 'success'); }
+      else { const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16); navigator.clipboard.writeText(`rgb(${r}, ${g}, ${b})`); showToast('RGB কপি!', 'success'); }
+    }
+
+    // Word Counter
+    document.getElementById('wordText').addEventListener('input', function() {
+      const t = this.value;
+      document.getElementById('wordCount').textContent = toBangla(t.trim() ? t.trim().split(/\s+/).length : 0);
+      document.getElementById('charCount').textContent = toBangla(t.length);
+      document.getElementById('lineCount').textContent = toBangla(t.split('\n').length);
+    });
+
+    // Unit Converter
+    function convertUnit() {
+      const val = parseFloat(document.getElementById('unitInput').value);
+      const type = document.getElementById('unitType').value;
+      if (!val) { document.getElementById('unitResult').textContent = '—'; return; }
+      let res = '';
+      if (type === 'length') res = toBangla((val * 3.281).toFixed(2)) + ' ফুট';
+      else if (type === 'weight') res = toBangla((val * 2.205).toFixed(2)) + ' পাউন্ড';
+      else if (type === 'temp') res = toBangla(((val * 9/5) + 32).toFixed(1)) + ' °F';
+      document.getElementById('unitResult').textContent = res;
+    }
+
+    // QR Code
+    function genQR() {
+      const text = document.getElementById('qrText').value;
+      if (!text) return alert('কিছু লিখুন');
+      document.getElementById('qrResult').innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(text)}" style="border-radius: 12px;">`;
+    }
+  </script>
+</body>
+</html>

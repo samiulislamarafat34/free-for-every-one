@@ -7,19 +7,36 @@ const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const { Blob } = require('node:buffer');
 const { Readable } = require('node:stream');
+const { MongoClient } = require('mongodb');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Sessions & Active Devices
-const activeSessions = {}; // memory store for active devices
+// MongoDB Connection
+const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://samiulislamarafat34:YOUR_PASSWORD@amanat-storage.yjwhqvm.mongodb.net/?appName=amanat-storage';
+const client = new MongoClient(mongoUri);
+
+let db;
+async function connectDB() {
+  try {
+    await client.connect();
+    db = client.db('amanat-storage');
+    console.log('Connected to MongoDB');
+  } catch (err) {
+    console.error('MongoDB connection error:', err);
+  }
+}
+connectDB();
+
+// Sessions & Active Devices (using in-memory for Vercel)
+const activeSessions = {};
 
 app.set('trust proxy', true);
 app.use(session({
   secret: process.env.SESSION_SECRET || 'premium-glass-secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 } // 30 days - longer session
+  cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 }
 }));
 
 app.use(express.static('public', { index: false }));
@@ -40,14 +57,32 @@ function parseUA(uaString) {
   return "Unknown Device";
 }
 
-// -------------------- Data Handlers --------------------
-function loadUsers() {
-  const usersPath = path.join(__dirname, 'data', 'users.json');
-  if (!fs.existsSync(usersPath)) return {};
-  return JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+// -------------------- Data Handlers (MongoDB) --------------------
+async function getUsers() {
+  if (!db) await connectDB();
+  const users = await db.collection('users').findOne({ _id: 'allUsers' });
+  return users ? users.data : {};
 }
-function saveUsers(users) {
-  fs.writeFileSync(path.join(__dirname, 'data', 'users.json'), JSON.stringify(users, null, 2));
+async function saveUsers(users) {
+  if (!db) await connectDB();
+  await db.collection('users').updateOne(
+    { _id: 'allUsers' },
+    { $set: { data: users } },
+    { upsert: true }
+  );
+}
+async function loadFiles() {
+  if (!db) await connectDB();
+  const files = await db.collection('files').findOne({ _id: 'allFiles' });
+  return files ? files.data : [];
+}
+async function saveFiles(files) {
+  if (!db) await connectDB();
+  await db.collection('files').updateOne(
+    { _id: 'allFiles' },
+    { $set: { data: files } },
+    { upsert: true }
+  );
 }
 function isAuthenticated(req) {
   return req.session && req.session.user;
@@ -64,9 +99,9 @@ function authGuard(req, res, next) {
 }
 
 // -------------------- Auth Routes --------------------
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
   const { username, password } = req.body;
-  const users = loadUsers();
+  const users = await getUsers();
   const user = users[username];
 
   if (!user || !bcrypt.compareSync(password, user.passwordHash)) {
@@ -105,7 +140,7 @@ app.post('/login', (req, res) => {
   });
 });
 
-app.post('/register', (req, res) => {
+app.post('/register', async (req, res) => {
   const { name, email, mobile, username, password, telegramChatId } = req.body;
 
   if (!name || !email || !mobile || !username || !password) {
@@ -116,7 +151,7 @@ app.post('/register', (req, res) => {
     return res.status(400).json({ success: false, msg: 'Password must be at least 6 characters' });
   }
 
-  const users = loadUsers();
+  const users = await getUsers();
 
   if (users[username]) {
     return res.status(400).json({ success: false, msg: 'Username already exists' });
@@ -131,22 +166,17 @@ app.post('/register', (req, res) => {
     telegramChatId: telegramChatId || null,
     storageLimit: 10 * 1024 * 1024 * 1024, // 10GB default
     createdAt: Date.now(),
-    status: 'active' // active or suspended
+    status: 'active'
   };
 
-  saveUsers(users);
+  await saveUsers(users);
 
-  // Save to profile
-  const profilePath = path.join(__dirname, 'data', 'profile.json');
-  let profile = fs.existsSync(profilePath) ? JSON.parse(fs.readFileSync(profilePath, 'utf8')) : {};
-  profile[username] = {
-    name: name,
-    email: email,
-    mobile: mobile,
-    telegramChatId: telegramChatId || null,
-    createdAt: Date.now()
-  };
-  fs.writeFileSync(profilePath, JSON.stringify(profile, null, 2));
+  // Save to profile in MongoDB
+  await db.collection('profiles').updateOne(
+    { _id: username },
+    { $set: { name, email, mobile, telegramChatId: telegramChatId || null, createdAt: Date.now() } },
+    { upsert: true }
+  );
 
   // Send welcome message to user's Telegram if provided
   if (telegramChatId && process.env.TELEGRAM_BOT_TOKEN) {
@@ -177,11 +207,11 @@ app.get('/active-devices', authGuard, (req, res) => {
 });
 
 // -------------------- Admin User Management --------------------
-app.get('/admin/users', authGuard, (req, res) => {
+app.get('/admin/users', authGuard, async (req, res) => {
   if (req.session.user.username !== 'admin') {
     return res.status(403).json({ success: false, msg: 'Admin only' });
   }
-  const users = loadUsers();
+  const users = await getUsers();
   const userList = Object.keys(users).map(u => ({
     username: u,
     name: users[u].name,
@@ -195,21 +225,21 @@ app.get('/admin/users', authGuard, (req, res) => {
   res.json({ success: true, users: userList });
 });
 
-app.post('/admin/user/suspend', authGuard, (req, res) => {
+app.post('/admin/user/suspend', authGuard, async (req, res) => {
   if (req.session.user.username !== 'admin') {
     return res.status(403).json({ success: false, msg: 'Admin only' });
   }
   const { username, status } = req.body;
-  const users = loadUsers();
+  const users = await getUsers();
   if (!users[username]) {
     return res.status(404).json({ success: false, msg: 'User not found' });
   }
   users[username].status = status;
-  saveUsers(users);
+  await saveUsers(users);
   res.json({ success: true, msg: `User ${status === 'suspended' ? 'suspended' : 'activated'}` });
 });
 
-app.post('/admin/user/delete', authGuard, (req, res) => {
+app.post('/admin/user/delete', authGuard, async (req, res) => {
   if (req.session.user.username !== 'admin') {
     return res.status(403).json({ success: false, msg: 'Admin only' });
   }
@@ -217,20 +247,15 @@ app.post('/admin/user/delete', authGuard, (req, res) => {
   if (username === 'admin') {
     return res.status(400).json({ success: false, msg: 'Cannot delete admin' });
   }
-  const users = loadUsers();
+  const users = await getUsers();
   if (!users[username]) {
     return res.status(404).json({ success: false, msg: 'User not found' });
   }
   delete users[username];
-  saveUsers(users);
+  await saveUsers(users);
 
   // Also delete from profile
-  const profilePath = path.join(__dirname, 'data', 'profile.json');
-  if (fs.existsSync(profilePath)) {
-    const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
-    delete profile[username];
-    fs.writeFileSync(profilePath, JSON.stringify(profile, null, 2));
-  }
+  await db.collection('profiles').deleteOne({ _id: username });
 
   res.json({ success: true, msg: 'User deleted' });
 });
@@ -275,16 +300,16 @@ app.post('/verify-otp', (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/reset-password', (req, res) => {
+app.post('/reset-password', async (req, res) => {
   const { code, newPassword } = req.body;
   if (!currentOtp || currentOtp !== code || otpExpires < Date.now()) {
     return res.status(400).json({ success: false, msg: 'Invalid or expired OTP' });
   }
-  
-  const users = loadUsers();
+
+  const users = await getUsers();
   if (users['admin']) {
     users['admin'].passwordHash = bcrypt.hashSync(newPassword, 10);
-    saveUsers(users);
+    await saveUsers(users);
   }
   currentOtp = null;
   res.json({ success: true });
@@ -301,14 +326,13 @@ function detectFileType(mimetype, filename) {
 
 app.post('/upload', authGuard, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ success: false, msg: 'No file provided' });
-  
+
   const filePath = req.file.path;
   const originalName = req.file.originalname;
-  const fileType = detectFileType(req.file.mimetype, originalName);
 
   try {
-    // Get user's Telegram Chat ID - send to user's own Telegram if connected
-    const users = loadUsers();
+    // Get user's Telegram Chat ID
+    const users = await getUsers();
     const user = users[req.session.user.username];
     const userChatId = user?.telegramChatId || process.env.TELEGRAM_CHAT_ID;
 
@@ -322,8 +346,8 @@ app.post('/upload', authGuard, upload.single('file'), async (req, res) => {
 
     const tgResp = await fetch(tgUrl, { method: 'POST', body: form });
     const tgData = await tgResp.json();
-    
-    fs.unlinkSync(filePath); // cleanup
+
+    fs.unlinkSync(filePath);
 
     if (!tgData.ok) {
       return res.status(500).json({ success: false, msg: 'Telegram upload failed' });
@@ -347,10 +371,9 @@ app.post('/upload', authGuard, upload.single('file'), async (req, res) => {
       username: req.session.user.username
     };
 
-    const dbPath = path.join(__dirname, 'data', 'files.json');
-    const db = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath, 'utf8')) : [];
-    db.push(meta);
-    saveFiles(db);
+    const files = await loadFiles();
+    files.push(meta);
+    await saveFiles(files);
 
     res.json({ success: true, file: meta });
   } catch (error) {
@@ -370,7 +393,7 @@ app.post('/save-note', authGuard, async (req, res) => {
 
   try {
     // Get user's Telegram Chat ID
-    const users = loadUsers();
+    const users = await getUsers();
     const user = users[req.session.user.username];
     const userChatId = user?.telegramChatId || process.env.TELEGRAM_CHAT_ID;
 
@@ -396,10 +419,10 @@ app.post('/save-note', authGuard, async (req, res) => {
       size: content.length,
       uploadedAt: Date.now()
     };
-    
-    const db = loadFiles();
-    db.push(meta);
-    saveFiles(db);
+
+    const files = await loadFiles();
+    files.push(meta);
+    await saveFiles(files);
 
     res.json({ success: true, file: meta });
   } catch (err) {
@@ -409,10 +432,8 @@ app.post('/save-note', authGuard, async (req, res) => {
 });
 
 // -------------------- Files & Download --------------------
-app.get('/files', authGuard, (req, res) => {
-<<<<<<< HEAD
-  const dbPath = path.join(__dirname, 'data', 'files.json');
-  const allFiles = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath, 'utf8')) : [];
+app.get('/files', authGuard, async (req, res) => {
+  const allFiles = await loadFiles();
 
   // Filter files by username (or admin sees all)
   const isAdmin = req.session.user.username === 'admin';
@@ -440,22 +461,21 @@ app.post('/folders', authGuard, (req, res) => {
   res.json({ success: true, folder: newFolder });
 });
 
-app.post('/rename', authGuard, (req, res) => {
+app.post('/rename', authGuard, async (req, res) => {
   const { id, newName } = req.body;
-  const files = loadFiles();
+  const files = await loadFiles();
   const file = files.find(f => f.telegramFileId === id || f.id === id);
   if (!file) return res.status(404).json({ success: false });
   file.name = newName;
-  saveFiles(files);
+  await saveFiles(files);
   res.json({ success: true });
->>>>>>> 3ad689e8d46a1b9f937c0c36de999762a39cb0f8
 });
 
 app.get('/download/:id', authGuard, async (req, res) => {
   try {
     const fileId = req.params.id;
     const isInline = req.query.inline === 'true';
-    const files = loadFiles();
+    const files = await loadFiles();
     const fileMeta = files.find(f => f.telegramFileId === fileId);
     const fileName = fileMeta ? fileMeta.name : 'downloaded_file';
 
@@ -505,68 +525,69 @@ app.get('/download/:id', authGuard, async (req, res) => {
 });
 
 // -------------------- Profile & Profile Picture --------------------
-app.get('/profile', authGuard, (req, res) => {
-  const profilePath = path.join(__dirname, 'data', 'profile.json');
-  const profile = fs.existsSync(profilePath) ? JSON.parse(fs.readFileSync(profilePath, 'utf8')) : {};
-  res.json(profile);
+app.get('/profile', authGuard, async (req, res) => {
+  if (!db) await connectDB();
+  const profile = await db.collection('profiles').findOne({ _id: req.session.user.username });
+  res.json(profile || {});
 });
 
-app.post('/profile', authGuard, upload.single('profilePic'), (req, res) => {
-  const profilePath = path.join(__dirname, 'data', 'profile.json');
-  let profile = fs.existsSync(profilePath) ? JSON.parse(fs.readFileSync(profilePath, 'utf8')) : {};
-  
+app.post('/profile', authGuard, upload.single('profilePic'), async (req, res) => {
+  const username = req.session.user.username;
+  let profile = await db.collection('profiles').findOne({ _id: username }) || {};
+
   // Update data
   if(req.body.profileData) {
     const newData = JSON.parse(req.body.profileData);
     profile = { ...profile, ...newData };
   }
-  
-  // Handle profile pic locally for speed
+
+  // Handle profile pic locally for Vercel (use base64 or external)
   if(req.file) {
     const ext = path.extname(req.file.originalname);
     const picName = `profile_${Date.now()}${ext}`;
     const targetPath = path.join(__dirname, 'public', 'uploads', picName);
-    
+
     if (!fs.existsSync(path.join(__dirname, 'public', 'uploads'))) {
       fs.mkdirSync(path.join(__dirname, 'public', 'uploads'), { recursive: true });
     }
-    
+
     fs.renameSync(req.file.path, targetPath);
     profile.profilePicUrl = `/uploads/${picName}`;
   }
-  
-  fs.writeFileSync(profilePath, JSON.stringify(profile, null, 2));
+
+  profile._id = username;
+  await db.collection('profiles').replaceOne({ _id: username }, profile, { upsert: true });
   res.json({ success: true, profile });
 });
 
 // -------------------- User Settings (Telegram) --------------------
-app.post('/settings/telegram', authGuard, (req, res) => {
+app.post('/settings/telegram', authGuard, async (req, res) => {
   const { telegramChatId, telegramBotToken } = req.body;
   const username = req.session.user.username;
 
-  const users = loadUsers();
+  const users = await getUsers();
   if (!users[username]) {
     return res.status(404).json({ success: false, msg: 'User not found' });
   }
 
   users[username].telegramChatId = telegramChatId || null;
-  saveUsers(users);
+  await saveUsers(users);
 
-  const profilePath = path.join(__dirname, 'data', 'profile.json');
-  let profile = fs.existsSync(profilePath) ? JSON.parse(fs.readFileSync(profilePath, 'utf8')) : {};
-  profile[username] = { ...profile[username], telegramChatId };
-  fs.writeFileSync(profilePath, JSON.stringify(profile, null, 2));
+  await db.collection('profiles').updateOne(
+    { _id: username },
+    { $set: { telegramChatId } },
+    { upsert: true }
+  );
 
   res.json({ success: true, msg: 'Telegram settings updated' });
 });
 
 // -------------------- Admin Panel Files (All users) --------------------
-app.get('/admin/files', authGuard, (req, res) => {
+app.get('/admin/files', authGuard, async (req, res) => {
   if (req.session.user.username !== 'admin') {
     return res.status(403).json({ success: false, msg: 'Admin only' });
   }
-  const dbPath = path.join(__dirname, 'data', 'files.json');
-  const allFiles = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath, 'utf8')) : [];
+  const allFiles = await loadFiles();
   res.json({ success: true, files: allFiles });
 });
 
@@ -575,8 +596,8 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'landing.
 app.get('/index', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // Session user info API
-app.get('/user-info', authGuard, (req, res) => {
-  const users = loadUsers();
+app.get('/user-info', authGuard, async (req, res) => {
+  const users = await getUsers();
   const user = users[req.session.user.username];
   res.json({
     username: req.session.user.username,
@@ -591,10 +612,8 @@ app.get('/user-info', authGuard, (req, res) => {
 });
 
 // Get user's own files only
-app.get('/my-files', authGuard, (req, res) => {
-  const dbPath = path.join(__dirname, 'data', 'files.json');
-  const allFiles = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath, 'utf8')) : [];
-  // For now, return all files (in production, filter by user)
+app.get('/my-files', authGuard, async (req, res) => {
+  const allFiles = await loadFiles();
   res.json({ files: allFiles });
 });
 

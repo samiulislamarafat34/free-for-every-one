@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amanat - প্রোফাইল</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="landing-body">
+  <div class="orb-container">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+  </div>
+
+  <!-- Profile Container -->
+  <div class="profile-container">
+    <!-- Profile Header -->
+    <div class="profile-header glass">
+      <div class="profile-avatar-large" id="profileAvatar">
+        <i class="fas fa-user"></i>
+        <label class="upload-btn-overlay" onclick="document.getElementById('avatarInput').click()">
+          <i class="fas fa-camera"></i> ছবি আপলোড
+        </label>
+        <input type="file" id="avatarInput" hidden accept="image/*" onchange="handleAvatarUpload(event)">
+      </div>
+      <h1 id="profileName">ব্যবহারকারী</h1>
+      <p id="profileEmail">ইমেইল</p>
+
+      <!-- Stats -->
+      <div class="profile-stats">
+        <div class="stat-card glass">
+          <i class="fas fa-image"></i>
+          <h4 id="statPhotos">০</h4>
+          <p>ফটো</p>
+        </div>
+        <div class="stat-card glass">
+          <i class="fas fa-video"></i>
+          <h4 id="statVideos">০</h4>
+          <p>ভিডিও</p>
+        </div>
+        <div class="stat-card glass">
+          <i class="fas fa-music"></i>
+          <h4 id="statAudio">০</h4>
+          <p>অডিও</p>
+        </div>
+        <div class="stat-card glass">
+          <i class="fas fa-file-alt"></i>
+          <h4 id="statDocs">০</h4>
+          <p>ডকুমেন্ট</p>
+        </div>
+        <div class="stat-card glass">
+          <i class="fas fa-sticky-note"></i>
+          <h4 id="statNotes">০</h4>
+          <p>নোট</p>
+        </div>
+        <div class="stat-card glass">
+          <i class="fas fa-clock"></i>
+          <h4 id="statDays">০</h4>
+          <p>দিন সক্রিয়</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Profile Form -->
+    <div class="glass" style="padding: 40px; margin-bottom: 30px;">
+      <h2 style="margin-bottom: 30px; display: flex; align-items: center; gap: 12px;">
+        <i class="fas fa-edit" style="background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+        প্রোফাইল সম্পাদনা
+      </h2>
+      <form id="profileForm">
+        <div class="form-group">
+          <label for="name">পুরো নাম</label>
+          <div class="input-wrapper">
+            <i class="fas fa-user"></i>
+            <input type="text" id="name" placeholder="আপনার নাম">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="email">ইমেইল</label>
+          <div class="input-wrapper">
+            <i class="fas fa-envelope"></i>
+            <input type="email" id="email" placeholder="আপনার ইমেইল">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="phone">ফোন নম্বর</label>
+          <div class="input-wrapper">
+            <i class="fas fa-phone"></i>
+            <input type="tel" id="phone" placeholder="ফোন নম্বর">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="bio">বায়ো</label>
+          <div class="input-wrapper">
+            <i class="fas fa-info-circle"></i>
+            <input type="text" id="bio" placeholder="আপনার সম্পর্কে">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary form-btn">
+          <i class="fas fa-save"></i> সংরক্ষণ
+        </button>
+      </form>
+    </div>
+
+    <!-- Device Management -->
+    <div class="glass" style="padding: 40px;">
+      <h2 style="margin-bottom: 30px; display: flex; align-items: center; gap: 12px;">
+        <i class="fas fa-mobile-alt" style="background: var(--gradient-3); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+        ডিভাইস ম্যানেজমেন্ট
+      </h2>
+      <div id="deviceList">
+        <!-- Devices loaded via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="nav-bar glass">
+    <a href="/dashboard.html" class="nav-item">
+      <i class="fas fa-home"></i>
+      <span>ড্যাশবোর্ড</span>
+    </a>
+    <a href="/storage.html" class="nav-item">
+      <i class="fas fa-folder"></i>
+      <span>স্টোরেজ</span>
+    </a>
+    <a href="/notes.html" class="nav-item">
+      <i class="fas fa-sticky-note"></i>
+      <span>নোটস</span>
+    </a>
+    <a href="/tools.html" class="nav-item">
+      <i class="fas fa-tools"></i>
+      <span>টুলস</span>
+    </a>
+    <a href="/profile.html" class="nav-item active">
+      <i class="fas fa-user"></i>
+      <span>প্রোফাইল</span>
+    </a>
+  </nav>
+
+  <script src="animations.js"></script>
+  <script>
+    // Load profile data
+    async function loadProfile() {
+      try {
+        const res = await fetch('/profile');
+        const data = await res.json();
+        if (data.name) {
+          document.getElementById('name').value = data.name || '';
+          document.getElementById('email').value = data.email || '';
+          document.getElementById('phone').value = data.phone || '';
+          document.getElementById('bio').value = data.bio || '';
+          document.getElementById('profileName').textContent = data.name || 'ব্যবহারকারী';
+          document.getElementById('profileEmail').textContent = data.email || '';
+          if (data.profilePicUrl) {
+            document.getElementById('profileAvatar').innerHTML = `<img src="${data.profilePicUrl}" alt="Profile"><label class="upload-btn-overlay" onclick="document.getElementById('avatarInput').click()"><i class="fas fa-camera"></i> ছবি আপলোড</label>`;
+          }
+        }
+      } catch (e) {
+        console.log('No profile data');
+      }
+    }
+
+    // Load file stats
+    async function loadStats() {
+      try {
+        const res = await fetch('/files');
+        const data = await res.json();
+        if (data.files) {
+          const stats = { photo: 0, video: 0, audio: 0, document: 0 };
+          data.files.forEach(f => {
+            if (stats[f.type] !== undefined) stats[f.type]++;
+          });
+          document.getElementById('statPhotos').textContent = toBangla(stats.photo);
+          document.getElementById('statVideos').textContent = toBangla(stats.video);
+          document.getElementById('statAudio').textContent = toBangla(stats.audio);
+          document.getElementById('statDocs').textContent = toBangla(stats.document);
+        }
+      } catch (e) {}
+    }
+
+    // Load devices
+    async function loadDevices() {
+      try {
+        const res = await fetch('/active-devices');
+        const data = await res.json();
+        const list = document.getElementById('deviceList');
+        if (data.devices && data.devices.length) {
+          list.innerHTML = data.devices.map((d, i) => `
+            <div class="device-item">
+              <div class="device-icon" style="background: ${i === 0 ? 'var(--gradient-3)' : 'var(--gradient-2)'}">
+                <i class="fas fa-${d.device.includes('Phone') ? 'mobile-alt' : d.device.includes('PC') ? 'desktop' : 'laptop'}"></i>
+              </div>
+              <div class="device-info">
+                <h4>${d.device}</h4>
+                <p>${i === 0 ? 'সম্প্রতি সক্রিয়' : 'লগইন: ' + new Date(d.loginTime).toLocaleDateString('bn-BD')}</p>
+              </div>
+              <span class="device-status ${i === 0 ? 'active' : 'inactive'}">${i === 0 ? 'সক্রিয়' : 'নিষ্ক্রিয়'}</span>
+            </div>
+          `).join('');
+        } else {
+          list.innerHTML = '<p style="color: var(--text-muted); text-align: center;">কোনো ডিভাইস পাওয়া যায়নি</p>';
+        }
+      } catch (e) {
+        document.getElementById('deviceList').innerHTML = '<p style="color: var(--text-muted);">ডিভাইস লোড করতে ব্যর্থ</p>';
+      }
+    }
+
+    // Avatar upload
+    function handleAvatarUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append('profilePic', file);
+      fetch('/profile', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      }).then(r => r.json()).then(data => {
+        if (data.success) {
+          showToast('প্রোফাইল ছবি আপডেট হয়েছে!', 'success');
+          loadProfile();
+        }
+      });
+    }
+
+    // Save profile
+    document.getElementById('profileForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const data = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        bio: document.getElementById('bio').value
+      };
+      const formData = new FormData();
+      formData.append('profileData', JSON.stringify(data));
+      const res = await fetch('/profile', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+      const result = await res.json();
+      if (result.success) {
+        showToast('প্রোফাইল সংরক্ষিত!', 'success');
+        loadProfile();
+      }
+    });
+
+    loadProfile();
+    loadStats();
+    loadDevices();
+  </script>
+</body>
+</html>

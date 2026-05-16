@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amanat - স্টোরেজ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="landing-body">
+  <div class="orb-container">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+  </div>
+
+  <div class="notes-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+      <h1>
+        <i class="fas fa-folder-open" style="background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+        স্টোরেজ
+      </h1>
+      <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+        <i class="fas fa-cloud-upload-alt"></i> আপলোড
+      </button>
+      <input type="file" id="fileInput" hidden multiple onchange="handleUpload(event)">
+    </div>
+
+    <!-- Storage Stats -->
+    <div class="storage-panel glass" style="margin-bottom: 30px;">
+      <div class="ripple-fill" id="rippleFill" style="height: 25%;"></div>
+      <div class="storage-content">
+        <div class="storage-header">
+          <h3><i class="fas fa-chart-pie"></i> স্টোরেজ সামগ্রিক</h3>
+        </div>
+        <div class="storage-stats-grid" style="margin-top: 20px;">
+          <div class="storage-stat-item">
+            <i class="fas fa-image" style="color: #667eea;"></i>
+            <h4 id="photoSize">০ MB</h4>
+            <p>ফটো</p>
+          </div>
+          <div class="storage-stat-item">
+            <i class="fas fa-video" style="color: #f5576c;"></i>
+            <h4 id="videoSize">০ MB</h4>
+            <p>ভিডিও</p>
+          </div>
+          <div class="storage-stat-item">
+            <i class="fas fa-music" style="color: #4facfe;"></i>
+            <h4 id="audioSize">০ MB</h4>
+            <p>অডিও</p>
+          </div>
+          <div class="storage-stat-item">
+            <i class="fas fa-file-alt" style="color: #43e97b;"></i>
+            <h4 id="docSize">০ MB</h4>
+            <p>ডকুমেন্ট</p>
+          </div>
+          <div class="storage-stat-item">
+            <i class="fas fa-database" style="color: #f79711;"></i>
+            <h4 id="totalSize">০ MB</h4>
+            <p>মোট</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload Zone -->
+    <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+      <i class="fas fa-cloud-upload-alt"></i>
+      <h3>ফাইল আপলোড করুন</h3>
+      <p>ফটো, ভিডিও, অডিও, বা ডকুমেন্ট</p>
+    </div>
+
+    <!-- Folders -->
+    <h2 style="margin: 30px 0 20px;">ফোল্ডারসমূহ</h2>
+    <div class="folder-grid">
+      <div class="folder-card glass">
+        <div class="folder-icon"><i class="fas fa-image"></i></div>
+        <h4>ফটো</h4>
+        <p><span id="photoCount">০</span>টি ফাইল</p>
+      </div>
+      <div class="folder-card glass">
+        <div class="folder-icon" style="background: var(--gradient-2); -webkit-background-clip: text;"><i class="fas fa-video"></i></div>
+        <h4>ভিডিও</h4>
+        <p><span id="videoCount">০</span>টি ফাইল</p>
+      </div>
+      <div class="folder-card glass">
+        <div class="folder-icon" style="background: var(--gradient-3); -webkit-background-clip: text;"><i class="fas fa-music"></i></div>
+        <h4>অডিও</h4>
+        <p><span id="audioCount">০</span>টি ফাইল</p>
+      </div>
+      <div class="folder-card glass">
+        <div class="folder-icon" style="background: var(--gradient-4); -webkit-background-clip: text;"><i class="fas fa-file-alt"></i></div>
+        <h4>ডকুমেন্ট</h4>
+        <p><span id="docCount">০</span>টি ফাইল</p>
+      </div>
+    </div>
+
+    <!-- Recent Files -->
+    <h2 style="margin: 30px 0 20px;">সাম্প্রতিক ফাইলসমূহ</h2>
+    <div class="file-grid" id="recentFiles">
+      <p style="color: var(--text-muted); text-align: center; grid-column: 1/-1; padding: 40px;">কোনো ফাইল নেই</p>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="nav-bar glass">
+    <a href="/dashboard.html" class="nav-item">
+      <i class="fas fa-home"></i>
+      <span>ড্যাশবোর্ড</span>
+    </a>
+    <a href="/storage.html" class="nav-item active">
+      <i class="fas fa-folder"></i>
+      <span>স্টোরেজ</span>
+    </a>
+    <a href="/notes.html" class="nav-item">
+      <i class="fas fa-sticky-note"></i>
+      <span>নোটস</span>
+    </a>
+    <a href="/tools.html" class="nav-item">
+      <i class="fas fa-tools"></i>
+      <span>টুলস</span>
+    </a>
+    <a href="/profile.html" class="nav-item">
+      <i class="fas fa-user"></i>
+      <span>প্রোফাইল</span>
+    </a>
+  </nav>
+
+  <script src="animations.js"></script>
+  <script>
+    async function loadFiles() {
+      try {
+        const res = await fetch('/files');
+        const data = await res.json();
+        if (!data.files || !data.files.length) return;
+
+        const stats = { photo: {count:0,size:0}, video: {count:0,size:0}, audio: {count:0,size:0}, document: {count:0,size:0} };
+        let totalSize = 0;
+
+        data.files.forEach(f => {
+          if (stats[f.type]) { stats[f.type].count++; stats[f.type].size += f.size || 0; }
+          totalSize += f.size || 0;
+        });
+
+        document.getElementById('photoCount').textContent = toBangla(stats.photo.count);
+        document.getElementById('photoSize').textContent = formatSize(stats.photo.size);
+        document.getElementById('videoCount').textContent = toBangla(stats.video.count);
+        document.getElementById('videoSize').textContent = formatSize(stats.video.size);
+        document.getElementById('audioCount').textContent = toBangla(stats.audio.count);
+        document.getElementById('audioSize').textContent = formatSize(stats.audio.size);
+        document.getElementById('docCount').textContent = toBangla(stats.document.count);
+        document.getElementById('docSize').textContent = formatSize(stats.document.size);
+        document.getElementById('totalSize').textContent = formatSize(totalSize);
+
+        const percent = Math.round((totalSize / (10 * 1024 * 1024 * 1024)) * 100);
+        document.getElementById('rippleFill').style.height = Math.min(percent, 100) + '%';
+
+        const recent = data.files.slice(-12).reverse();
+        document.getElementById('recentFiles').innerHTML = recent.map(f => `
+          <div class="file-card glass">
+            <div class="file-icon ${f.type}">
+              <i class="fas fa-${f.type === 'photo' ? 'image' : f.type === 'video' ? 'video' : f.type === 'audio' ? 'music' : 'file-alt'}"></i>
+            </div>
+            <h4>${f.name}</h4>
+            <p>${formatSize(f.size || 0)}</p>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.log('Error loading files');
+      }
+    }
+
+    async function handleUpload(event) {
+      const files = event.target.files;
+      if (!files.length) return;
+
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) formData.append('file', files[i]);
+
+      showToast('আপলোড হচ্ছে...', 'info');
+      try {
+        const res = await fetch('/upload', { method: 'POST', body: formData, credentials: 'include' });
+        const data = await res.json();
+        if (data.success) { showToast('আপলোড সফল!', 'success'); loadFiles(); }
+        else showToast(data.msg || 'ব্যর্থ', 'error');
+      } catch (e) { showToast('ত্রুটি', 'error'); }
+    }
+
+    loadFiles();
+  </script>
+</body>
+</html>
