@@ -617,6 +617,11 @@ app.get('/my-files', authGuard, async (req, res) => {
   res.json({ files: allFiles });
 });
 
+// Health check for Vercel
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: Date.now() });
+});
+
 // Export for Vercel serverless
 module.exports = app;
 
