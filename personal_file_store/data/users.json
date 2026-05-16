@@ -1,6 +1,19 @@
 {
   "admin": {
     "username": "admin",
-    "passwordHash": "$2a$10$YTYNRxxGTeX4BVnMj4C7ueR9tlLciamzeXLmdqHSxlEJqOiJb44hu"
+    "passwordHash": "$2a$10$BPCe6up56HtB5RmbefMpaObr04amAA11rqjco.FtH/V0ywzzCwDue",
+    "createdAt": 1715700000000,
+    "status": "suspended"
+  },
+  "samiul.islam.arafat34": {
+    "passwordHash": "$2a$10$pbUEPpaJIGGq6hqWSq8I2e3TNz/KGVxC/L9cm6uWUZY1d8fipl65m",
+    "createdAt": 1778870354099
+  },
+  "samiya.salam.ispa": {
+    "passwordHash": "$2a$10$XvdfRRfQdCX2RveLXE.7nufLHhSA1L5lKtJ0DjffJjU/tz45855Re",
+    "telegramChatId": null,
+    "storageLimit": 10737418240,
+    "createdAt": 1778900636317,
+    "status": "active"
   }
 }

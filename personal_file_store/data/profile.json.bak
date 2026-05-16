@@ -6,5 +6,15 @@
   "father": "JAMAL UDDIN",
   "mother": "PERVIN BEGUM",
   "present_addr": "jsa;lkjl;kfd",
-  "permanent_addr": ""
+  "permanent_addr": "",
+  "profilePicUrl": "/uploads/profile_1778871823700.PNG",
+  "name": "Samiul islam arafat",
+  "email": "samiul.islam.arafat34@gmail.com",
+  "phone": "01860908898",
+  "bio": "",
+  "samiya.salam.ispa": {
+    "name": "samiya.salam.ispa",
+    "telegramChatId": null,
+    "createdAt": 1778900636319
+  }
 }
