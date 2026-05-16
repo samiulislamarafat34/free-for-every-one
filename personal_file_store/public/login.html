@@ -3,166 +3,389 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Premium Store - Login</title>
+  <title>Amanat - Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .lang-toggle {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      z-index: 100;
+      display: flex;
+      gap: 8px;
+    }
+    .lang-btn {
+      padding: 6px 12px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 15px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .lang-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+    [data-lang="bn"] { display: none; }
+    .back-btn {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      z-index: 100;
+      padding: 8px 16px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+    .back-btn:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+  </style>
 </head>
-<body class="login-body">
+<body class="landing-body">
+  <!-- Back Button -->
+  <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i> <span data-lang="en">Back</span><span data-lang="bn">ফিরে</span></a>
 
-  <div class="glass login-container">
-    <!-- Analyzing Overlay -->
-    <div id="analyzingOverlay" class="analyzing-overlay">
-      <div class="scanner-ring"></div>
-      <h3 style="color: var(--primary);">Analyzing details...</h3>
-      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">Securing your connection</p>
+  <!-- Language Toggle -->
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('en')">English</button>
+    <button class="lang-btn" onclick="setLang('bn')">বাংলা</button>
+  </div>
+
+  <div class="orb-container">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+  </div>
+
+  <div class="logo-container">
+    <div class="logo-glow"></div>
+    <div class="logo-box">
+      <i class="fas fa-cloud"></i>
+    </div>
+  </div>
+
+  <div class="form-container glass">
+    <div class="form-header">
+      <h1>
+        <span data-lang="en">Welcome!</span>
+        <span data-lang="bn">স্বাগতম!</span>
+      </h1>
+      <p>
+        <span data-lang="en">Login to your account</span>
+        <span data-lang="bn">আপনার অ্যাকাউন্টে প্রবেশ করুন</span>
+      </p>
     </div>
 
-    <!-- Login Form -->
-    <i class="fa-solid fa-shield-halved login-logo"></i>
-    <h2 class="animated-title" style="margin-bottom: 0.2rem;">Premium Store</h2>
-    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 2rem;">Secure by Samiul Islam Arafat</p>
-    
     <form id="loginForm">
       <div class="form-group">
-        <input type="text" name="username" id="username" class="form-control" placeholder="Username" required autocomplete="off"/>
+        <label>
+          <span data-lang="en">Username</span>
+          <span data-lang="bn">ব্যবহারকারীর নাম</span>
+        </label>
+        <div class="input-wrapper">
+          <i class="fas fa-user"></i>
+          <input type="text" id="username" placeholder="Enter username" required>
+        </div>
       </div>
+
       <div class="form-group">
-        <input type="password" name="password" id="password" class="form-control" placeholder="Password" required />
+        <label>
+          <span data-lang="en">Password</span>
+          <span data-lang="bn">পাসওয়ার্ড</span>
+        </label>
+        <div class="input-wrapper">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="password" placeholder="Enter password" required>
+          <i class="fas fa-eye toggle-password" onclick="togglePassword()" style="right: 16px; left: auto; cursor: pointer;"></i>
+        </div>
       </div>
-      <button type="submit" class="btn" style="width: 100%;"><i class="fa-solid fa-fingerprint"></i> Authenticate</button>
+
+      <!-- Math CAPTCHA -->
+      <div class="form-group">
+        <label>
+          <span data-lang="en">Security Check</span>
+          <span data-lang="bn">নিরাপত্তা যাচাই</span>
+        </label>
+        <div class="captcha-box" id="loginCaptcha" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 12px; text-align: center; border: 1px solid var(--glass-border); cursor: pointer;" onclick="refreshLoginCaptcha()">
+          <span id="captchaText" style="font-size: 18px; font-weight: 600; letter-spacing: 3px;">3 + 4 = ?</span>
+          <i class="fas fa-sync" style="margin-left: 8px; opacity: 0.6;"></i>
+        </div>
+        <div class="input-wrapper">
+          <i class="fas fa-calculator"></i>
+          <input type="number" id="captchaAnswer" placeholder="Answer" required>
+        </div>
+      </div>
+
+      <div class="form-group" style="text-align: right;">
+        <a href="#" onclick="openModal('forgotModal'); return false;" style="color: var(--text-muted); font-size: 14px; text-decoration: none;">
+          <span data-lang="en">Forgot Password?</span>
+          <span data-lang="bn">পাসওয়ার্ড ভুলে গেছেন?</span>
+        </a>
+      </div>
+
+      <button type="submit" class="btn btn-primary form-btn">
+        <i class="fas fa-sign-in-alt"></i>
+        <span data-lang="en">Login</span>
+        <span data-lang="bn">প্রবেশ করুন</span>
+      </button>
     </form>
-    
-    <div id="loginError" style="display:none; color: var(--danger); margin-top: 1rem; font-weight: 500;">Invalid credentials!</div>
-    
-    <div style="margin-top: 1.5rem;">
-      <button id="forgotPassBtn" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; text-decoration: underline;">Forgot Password?</button>
+
+    <div class="form-footer">
+      <p>
+        <span data-lang="en">Don't have an account?</span>
+        <span data-lang="bn">অ্যাকাউন্ট নেই?</span>
+        <a href="/register.html">
+          <span data-lang="en">Create new account</span>
+          <span data-lang="bn">নতুন অ্যাকাউন্ট তৈরি করুন</span>
+        </a>
+      </p>
     </div>
+
+    <div id="loginError" style="display: none; color: var(--danger); margin-top: 16px; font-weight: 500; text-align: center;">
+      <i class="fas fa-exclamation-circle"></i>
+      <span data-lang="en">Invalid credentials!</span>
+      <span data-lang="bn">ইউজারনেম বা পাসওয়ার্ড ভুল!</span>
+    </div>
+  </div>
+
+  <!-- Analyzing Screen -->
+  <div class="analyzing-screen" id="analyzingScreen">
+    <div class="analyzing-logo"><i class="fas fa-cloud"></i></div>
+    <h2 style="font-size: 24px; font-weight: 600;">Amanat</h2>
+    <div class="analyzing-progress"><div class="analyzing-bar"></div></div>
+    <div class="analyzing-text" id="analyzingText">
+      <span data-lang="en">Checking connection...</span>
+      <span data-lang="bn">সংযোগ পরীক্ষা করা হচ্ছে...</span>
+    </div>
+    <div class="analyzing-dots"><span></span><span></span><span></span></div>
   </div>
 
   <!-- Forgot Password Modal -->
   <div id="forgotModal" class="modal-overlay">
-    <div class="glass modal-content">
-      <button class="close-modal" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
-      
-      <!-- Step 1: Request OTP -->
+    <div class="modal-content glass">
+      <div class="modal-header">
+        <h2><i class="fas fa-key"></i>
+          <span data-lang="en">Reset Password</span>
+          <span data-lang="bn">পাসওয়ার্ড রিসেট</span>
+        </h2>
+        <button class="modal-close" onclick="closeModal('forgotModal')"><i class="fas fa-times"></i></button>
+      </div>
+
       <div id="fp-step-1">
-        <i class="fa-solid fa-shield-halved" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
-        <h3 style="margin-bottom: 1rem;">Reset Password</h3>
-        <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Receive a 6-digit verification code directly on your Telegram.</p>
-        <button id="sendCodeBtn" class="btn" style="width: 100%;">Send Code to Telegram</button>
+        <i class="fas fa-shield-halved" style="font-size: 3rem; background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1rem;"></i>
+        <h3 style="margin-bottom: 1rem;">
+          <span data-lang="en">Reset Password</span>
+          <span data-lang="bn">পাসওয়ার্ড রিসেট</span>
+        </h3>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">
+          <span data-lang="en">You will receive a 6-digit verification code on your Telegram.</span>
+          <span data-lang="bn">আপনার টেলিগ্রামে ৬-সংখ্যার ভেরিফিকেশন কোড পাবেন।</span>
+        </p>
+        <button id="sendCodeBtn" class="btn btn-primary" style="width: 100%;">
+          <i class="fas fa-paper-plane"></i>
+          <span data-lang="en">Send Code</span>
+          <span data-lang="bn">কোড পাঠান</span>
+        </button>
       </div>
 
-      <!-- Step 2: OTP Verify -->
       <div id="fp-step-2" style="display: none;">
-        <i class="fa-solid fa-shield-halved" style="font-size: 3rem; color: var(--accent); margin-bottom: 1rem;"></i>
-        <h3 style="margin-bottom: 1rem;">Verify Code</h3>
-        <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Check your Telegram Bot messages and enter the 6-digit code.</p>
-        <input type="text" id="fp-code" class="form-control" placeholder="000000" maxlength="6" style="margin-bottom: 1rem; text-align: center; letter-spacing: 5px; font-weight: bold; font-size: 1.2rem;">
-        <button id="verifyCodeBtn" class="btn btn-accent" style="width: 100%;">Verify</button>
+        <i class="fas fa-check-circle" style="font-size: 3rem; color: var(--success); margin-bottom: 1rem;"></i>
+        <h3 style="margin-bottom: 1rem;">
+          <span data-lang="en">Verify Code</span>
+          <span data-lang="bn">কোড যাচাই</span>
+        </h3>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">
+          <span data-lang="en">Check your Telegram bot messages.</span>
+          <span data-lang="bn">আপনার টেলিগ্রাম বট মেসেজ চেক করুন।</span>
+        </p>
+        <input type="text" id="fp-code" class="form-control" placeholder="000000" maxlength="6" style="margin-bottom: 1rem; text-align: center; letter-spacing: 8px; font-weight: bold; font-size: 1.4rem;">
+        <button id="verifyCodeBtn" class="btn btn-primary" style="width: 100%;">
+          <i class="fas fa-check"></i>
+          <span data-lang="en">Verify</span>
+          <span data-lang="bn">যাচাই করুন</span>
+        </button>
       </div>
 
-      <!-- Step 3: New Password -->
       <div id="fp-step-3" style="display: none;">
-        <i class="fa-solid fa-key" style="font-size: 3rem; color: var(--success); margin-bottom: 1rem;"></i>
-        <h3 style="margin-bottom: 1rem;">New Password</h3>
-        <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Create a strong new password.</p>
-        <input type="password" id="fp-newpass" class="form-control" placeholder="New Password" style="margin-bottom: 1rem;">
-        <button id="resetPassBtn" class="btn" style="width: 100%; margin-bottom: 0.5rem;">Update Password</button>
-        <button class="btn btn-outline" style="width: 100%;" onclick="closeModal()">Skip</button>
+        <i class="fas fa-lock" style="font-size: 3rem; background: var(--gradient-4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1rem;"></i>
+        <h3 style="margin-bottom: 1rem;">
+          <span data-lang="en">New Password</span>
+          <span data-lang="bn">নতুন পাসওয়ার্ড</span>
+        </h3>
+        <input type="password" id="fp-newpass" class="form-control" placeholder="New password" style="margin-bottom: 1rem;">
+        <button id="resetPassBtn" class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;">
+          <i class="fas fa-save"></i>
+          <span data-lang="en">Update</span>
+          <span data-lang="bn">আপডেট করুন</span>
+        </button>
+        <button class="btn btn-outline" style="width: 100%;" onclick="closeModal('forgotModal')">
+          <span data-lang="en">Skip</span>
+          <span data-lang="bn">স্কিপ করুন</span>
+        </button>
       </div>
 
       <div id="fpError" style="color: var(--danger); margin-top: 1rem; font-size: 0.9rem; display: none;"></div>
     </div>
   </div>
 
+  <script src="animations.js"></script>
   <script>
-    // Show/Hide Modal
-    const modal = document.getElementById('forgotModal');
-    document.getElementById('forgotPassBtn').addEventListener('click', () => {
-      modal.classList.add('active');
-    });
-    window.closeModal = () => {
-      modal.classList.remove('active');
-      document.getElementById('fp-step-1').style.display = 'block';
-      document.getElementById('fp-step-2').style.display = 'none';
-      document.getElementById('fp-step-3').style.display = 'none';
-      document.getElementById('fpError').style.display = 'none';
-    };
+    // Language Toggle
+    function setLang(lang) {
+      document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      if (lang === 'bn') {
+        document.querySelectorAll('[data-lang="en"]').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('[data-lang="bn"]').forEach(el => el.style.display = 'inline');
+      } else {
+        document.querySelectorAll('[data-lang="bn"]').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('[data-lang="en"]').forEach(el => el.style.display = 'inline');
+      }
+    }
 
-    // Forgot Password Logic
-    let currentEmail = '';
-    const fpError = document.getElementById('fpError');
-    const showErr = (msg) => { fpError.innerText = msg; fpError.style.display = 'block'; setTimeout(() => fpError.style.display='none', 3000); };
+    // Login CAPTCHA
+    let loginCaptchaAnswer = 7;
+    function refreshLoginCaptcha() {
+      const n1 = Math.floor(Math.random() * 10);
+      const n2 = Math.floor(Math.random() * 10);
+      loginCaptchaAnswer = n1 + n2;
+      document.getElementById('captchaText').textContent = n1 + ' + ' + n2 + ' = ?';
+    }
+    refreshLoginCaptcha();
 
-    document.getElementById('sendCodeBtn').addEventListener('click', async () => {
-      const btn = document.getElementById('sendCodeBtn'); btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...'; btn.disabled = true;
-      try {
-        const res = await fetch('/forgot-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({}) });
-        const data = await res.json();
-        if(data.success) {
-          document.getElementById('fp-step-1').style.display = 'none';
-          document.getElementById('fp-step-2').style.display = 'block';
-        } else showErr(data.msg);
-      } catch(e) { showErr('Network Error'); }
-      btn.innerHTML = 'Send Code to Telegram'; btn.disabled = false;
-    });
+    function togglePassword() {
+      const p = document.getElementById('password');
+      const t = document.querySelector('.toggle-password');
+      p.type = p.type === 'password' ? 'text' : 'password';
+      t.classList.toggle('fa-eye-slash');
+    }
 
-    document.getElementById('verifyCodeBtn').addEventListener('click', async () => {
-      const code = document.getElementById('fp-code').value;
-      if(!code) return showErr('Enter code');
-      try {
-        const res = await fetch('/verify-otp', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ code }) });
-        const data = await res.json();
-        if(data.success) {
-          document.getElementById('fp-step-2').style.display = 'none';
-          document.getElementById('fp-step-3').style.display = 'block';
-        } else showErr(data.msg);
-      } catch(e) { showErr('Network Error'); }
-    });
+    // Analyzing messages
+    const enMsgs = [
+      { text: 'Checking connection...', delay: 500 },
+      { text: 'Verifying username...', delay: 700 },
+      { text: 'Verifying password...', delay: 600 },
+      { text: 'Analyzing security...', delay: 800 },
+      { text: 'Collecting device info...', delay: 500 },
+      { text: 'Creating session...', delay: 600 },
+      { text: 'Loading dashboard...', delay: 400 }
+    ];
+    const bnMsgs = [
+      { text: 'সংযোগ পরীক্ষা করা হচ্ছে...', delay: 500 },
+      { text: 'ইউজারনেম যাচাই করা হচ্ছে...', delay: 700 },
+      { text: 'পাসওয়ার্ড যাচাই করা হচ্ছে...', delay: 600 },
+      { text: 'নিরাপত্তা বিশ্লেষণ করা হচ্ছে...', delay: 800 },
+      { text: 'ডিভাইস তথ্য সংগ্রহ করা হচ্ছে...', delay: 500 },
+      { text: 'সেশন তৈরি করা হচ্ছে...', delay: 600 },
+      { text: 'ড্যাশবোর্ড লোড করা হচ্ছে...', delay: 400 }
+    ];
 
-    document.getElementById('resetPassBtn').addEventListener('click', async () => {
-      const newPassword = document.getElementById('fp-newpass').value;
-      const code = document.getElementById('fp-code').value;
-      if(!newPassword) return showErr('Enter password');
-      try {
-        const res = await fetch('/reset-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ code, newPassword }) });
-        const data = await res.json();
-        if(data.success) {
-          closeModal();
-          alert('Password Reset Successful! Please login.');
-        } else showErr(data.msg);
-      } catch(e) { showErr('Network Error'); }
-    });
-
-    // Login Logic
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    // Login
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      const formData = new FormData(e.target);
-      const data = Object.fromEntries(formData.entries());
-      
+
+      const captchaVal = parseInt(document.getElementById('captchaAnswer').value);
+      if (captchaVal !== loginCaptchaAnswer) {
+        showToast('Wrong answer!', 'error');
+        refreshLoginCaptcha();
+        return;
+      }
+
+      const data = { username: document.getElementById('username').value, password: document.getElementById('password').value };
       const btn = e.target.querySelector('button[type="submit"]');
-      const ogHtml = btn.innerHTML;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting...';
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
       btn.disabled = true;
 
       try {
         const res = await fetch('/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
         const result = await res.json();
+
         if (result.success) {
-          // Play Analyzing Animation
-          document.getElementById('analyzingOverlay').classList.add('active');
-          setTimeout(() => {
-            window.location.href = '/dashboard.html';
-          }, 2000); // 2 second fake analyzing effect
+          const analyzingScreen = document.getElementById('analyzingScreen');
+          const analyzingText = document.getElementById('analyzingText');
+          analyzingScreen.classList.add('active');
+
+          const isBn = document.querySelector('.lang-btn:last-child').classList.contains('active');
+          const msgs = isBn ? bnMsgs : enMsgs;
+          let index = 0;
+          function showNext() {
+            if (index < msgs.length) {
+              analyzingText.innerHTML = isBn ? msgs[index].text : msgs[index].text;
+              setTimeout(showNext, msgs[index].delay);
+              index++;
+            } else {
+              setTimeout(() => window.location.href = '/dashboard.html', 500);
+            }
+          }
+          showNext();
         } else {
           document.getElementById('loginError').style.display = 'block';
-          btn.innerHTML = ogHtml;
+          btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
           btn.disabled = false;
         }
       } catch (err) {
         document.getElementById('loginError').style.display = 'block';
-        btn.innerHTML = ogHtml;
+        btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
         btn.disabled = false;
       }
+    });
+
+    // Forgot Password (same as before)
+    window.closeModal = function(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+      document.getElementById('fp-step-1').style.display = 'block';
+      document.getElementById('fp-step-2').style.display = 'none';
+      document.getElementById('fp-step-3').style.display = 'none';
+    };
+
+    document.getElementById('sendCodeBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('sendCodeBtn');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/forgot-password', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Code sent to Telegram!', 'success');
+          document.getElementById('fp-step-1').style.display = 'none';
+          document.getElementById('fp-step-2').style.display = 'block';
+        } else showToast(data.msg || 'Failed', 'error');
+      } catch(e) { showToast('Network error', 'error'); }
+      btn.disabled = false;
+    });
+
+    document.getElementById('verifyCodeBtn').addEventListener('click', async () => {
+      const code = document.getElementById('fp-code').value;
+      try {
+        const res = await fetch('/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('fp-step-2').style.display = 'none';
+          document.getElementById('fp-step-3').style.display = 'block';
+        } else showToast('Wrong code', 'error');
+      } catch(e) { showToast('Network error', 'error'); }
+    });
+
+    document.getElementById('resetPassBtn').addEventListener('click', async () => {
+      const newPassword = document.getElementById('fp-newpass').value;
+      const code = document.getElementById('fp-code').value;
+      try {
+        const res = await fetch('/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, newPassword }) });
+        const data = await res.json();
+        if (data.success) { closeModal('forgotModal'); showToast('Password reset!', 'success'); }
+      } catch(e) { showToast('Error', 'error'); }
     });
   </script>
 </body>

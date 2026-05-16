@@ -19,10 +19,10 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'premium-glass-secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000 }
+  cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 } // 30 days - longer session
 }));
 
-app.use(express.static('public'));
+app.use(express.static('public', { index: false }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -68,13 +68,18 @@ app.post('/login', (req, res) => {
   const { username, password } = req.body;
   const users = loadUsers();
   const user = users[username];
-  
+
   if (!user || !bcrypt.compareSync(password, user.passwordHash)) {
     return res.status(401).json({ success: false, msg: 'Invalid credentials' });
   }
 
+  // Check if account is suspended
+  if (user.status === 'suspended') {
+    return res.status(403).json({ success: false, msg: 'Account suspended. Contact admin.' });
+  }
+
   req.session.user = { username };
-  
+
   // Track device
   activeSessions[req.session.id] = {
     username: username,
@@ -84,7 +89,79 @@ app.post('/login', (req, res) => {
     lastActive: Date.now()
   };
 
-  res.json({ success: true });
+  // Return user info
+  res.json({
+    success: true,
+    user: {
+      username: username,
+      name: user.name,
+      email: user.email,
+      mobile: user.mobile,
+      telegramChatId: user.telegramChatId,
+      storageLimit: user.storageLimit,
+      status: user.status,
+      createdAt: user.createdAt
+    }
+  });
+});
+
+app.post('/register', (req, res) => {
+  const { name, email, mobile, username, password, telegramChatId } = req.body;
+
+  if (!name || !email || !mobile || !username || !password) {
+    return res.status(400).json({ success: false, msg: 'All fields are required' });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ success: false, msg: 'Password must be at least 6 characters' });
+  }
+
+  const users = loadUsers();
+
+  if (users[username]) {
+    return res.status(400).json({ success: false, msg: 'Username already exists' });
+  }
+
+  // Create new user
+  users[username] = {
+    passwordHash: bcrypt.hashSync(password, 10),
+    name: name,
+    email: email,
+    mobile: mobile,
+    telegramChatId: telegramChatId || null,
+    storageLimit: 10 * 1024 * 1024 * 1024, // 10GB default
+    createdAt: Date.now(),
+    status: 'active' // active or suspended
+  };
+
+  saveUsers(users);
+
+  // Save to profile
+  const profilePath = path.join(__dirname, 'data', 'profile.json');
+  let profile = fs.existsSync(profilePath) ? JSON.parse(fs.readFileSync(profilePath, 'utf8')) : {};
+  profile[username] = {
+    name: name,
+    email: email,
+    mobile: mobile,
+    telegramChatId: telegramChatId || null,
+    createdAt: Date.now()
+  };
+  fs.writeFileSync(profilePath, JSON.stringify(profile, null, 2));
+
+  // Send welcome message to user's Telegram if provided
+  if (telegramChatId && process.env.TELEGRAM_BOT_TOKEN) {
+    fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: telegramChatId,
+        text: `🎉 *Welcome to Amanat!*\n\nYour account has been created successfully.\n\n📁 Your files will be stored securely here.\n💾 Storage Limit: 10 GB\n\n_Built by Samiul Islam Arafat_`,
+        parse_mode: 'Markdown'
+      })
+    }).catch(console.log);
+  }
+
+  res.json({ success: true, msg: 'Account created successfully' });
 });
 
 app.get('/logout', (req, res) => {
@@ -97,6 +174,65 @@ app.get('/logout', (req, res) => {
 app.get('/active-devices', authGuard, (req, res) => {
   const devices = Object.values(activeSessions).filter(s => s.username === req.session.user.username);
   res.json({ success: true, devices });
+});
+
+// -------------------- Admin User Management --------------------
+app.get('/admin/users', authGuard, (req, res) => {
+  if (req.session.user.username !== 'admin') {
+    return res.status(403).json({ success: false, msg: 'Admin only' });
+  }
+  const users = loadUsers();
+  const userList = Object.keys(users).map(u => ({
+    username: u,
+    name: users[u].name,
+    email: users[u].email,
+    mobile: users[u].mobile,
+    telegramChatId: users[u].telegramChatId,
+    storageLimit: users[u].storageLimit,
+    status: users[u].status,
+    createdAt: users[u].createdAt
+  }));
+  res.json({ success: true, users: userList });
+});
+
+app.post('/admin/user/suspend', authGuard, (req, res) => {
+  if (req.session.user.username !== 'admin') {
+    return res.status(403).json({ success: false, msg: 'Admin only' });
+  }
+  const { username, status } = req.body;
+  const users = loadUsers();
+  if (!users[username]) {
+    return res.status(404).json({ success: false, msg: 'User not found' });
+  }
+  users[username].status = status;
+  saveUsers(users);
+  res.json({ success: true, msg: `User ${status === 'suspended' ? 'suspended' : 'activated'}` });
+});
+
+app.post('/admin/user/delete', authGuard, (req, res) => {
+  if (req.session.user.username !== 'admin') {
+    return res.status(403).json({ success: false, msg: 'Admin only' });
+  }
+  const { username } = req.body;
+  if (username === 'admin') {
+    return res.status(400).json({ success: false, msg: 'Cannot delete admin' });
+  }
+  const users = loadUsers();
+  if (!users[username]) {
+    return res.status(404).json({ success: false, msg: 'User not found' });
+  }
+  delete users[username];
+  saveUsers(users);
+
+  // Also delete from profile
+  const profilePath = path.join(__dirname, 'data', 'profile.json');
+  if (fs.existsSync(profilePath)) {
+    const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    delete profile[username];
+    fs.writeFileSync(profilePath, JSON.stringify(profile, null, 2));
+  }
+
+  res.json({ success: true, msg: 'User deleted' });
 });
 
 // -------------------- Forgot Password (OTP via Telegram) --------------------
@@ -159,8 +295,8 @@ function detectFileType(mimetype, filename) {
   if (mimetype.startsWith('image/')) return 'photo';
   if (mimetype.startsWith('video/')) return 'video';
   if (mimetype.startsWith('audio/')) return 'audio';
-  if (mimetype.startsWith('text/') || filename.endsWith('.txt')) return 'text';
-  return 'docs';
+  if (mimetype.startsWith('text/') || filename.endsWith('.txt')) return 'document';
+  return 'document';
 }
 
 app.post('/upload', authGuard, upload.single('file'), async (req, res) => {
@@ -171,10 +307,15 @@ app.post('/upload', authGuard, upload.single('file'), async (req, res) => {
   const fileType = detectFileType(req.file.mimetype, originalName);
 
   try {
+    // Get user's Telegram Chat ID - send to user's own Telegram if connected
+    const users = loadUsers();
+    const user = users[req.session.user.username];
+    const userChatId = user?.telegramChatId || process.env.TELEGRAM_CHAT_ID;
+
     const tgUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendDocument`;
     const form = new FormData();
-    form.append('chat_id', process.env.TELEGRAM_CHAT_ID);
-    
+    form.append('chat_id', userChatId);
+
     const fileBuffer = fs.readFileSync(filePath);
     const blob = new Blob([fileBuffer], { type: req.file.mimetype });
     form.append('document', blob, originalName);
@@ -193,9 +334,10 @@ app.post('/upload', authGuard, upload.single('file'), async (req, res) => {
       type: fileType,
       telegramFileId: tgData.result.document.file_id,
       size: req.file.size,
-      uploadedAt: Date.now()
+      uploadedAt: Date.now(),
+      username: req.session.user.username // Store username with file
     };
-    
+
     const dbPath = path.join(__dirname, 'data', 'files.json');
     const db = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath, 'utf8')) : [];
     db.push(meta);
@@ -212,16 +354,21 @@ app.post('/upload', authGuard, upload.single('file'), async (req, res) => {
 app.post('/save-note', authGuard, async (req, res) => {
   const { title, content } = req.body;
   if (!content) return res.status(400).json({ success: false });
-  
+
   const originalName = `${title || 'note'}_${Date.now()}.txt`;
   const tmpPath = path.join('temp', originalName);
   fs.writeFileSync(tmpPath, content);
-  
+
   try {
+    // Get user's Telegram Chat ID
+    const users = loadUsers();
+    const user = users[req.session.user.username];
+    const userChatId = user?.telegramChatId || process.env.TELEGRAM_CHAT_ID;
+
     const tgUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendDocument`;
     const form = new FormData();
-    form.append('chat_id', process.env.TELEGRAM_CHAT_ID);
-    
+    form.append('chat_id', userChatId);
+
     const fileBuffer = fs.readFileSync(tmpPath);
     const blob = new Blob([fileBuffer], { type: 'text/plain' });
     form.append('document', blob, originalName);
@@ -255,10 +402,15 @@ app.post('/save-note', authGuard, async (req, res) => {
 // -------------------- Files & Download --------------------
 app.get('/files', authGuard, (req, res) => {
   const dbPath = path.join(__dirname, 'data', 'files.json');
-  const db = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath, 'utf8')) : [];
+  const allFiles = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath, 'utf8')) : [];
+
+  // Filter files by username (or admin sees all)
+  const isAdmin = req.session.user.username === 'admin';
+  const userFiles = isAdmin ? allFiles : allFiles.filter(f => f.username === req.session.user.username);
+
   let totalSize = 0;
-  db.forEach(file => { if(file.size) totalSize += file.size; });
-  res.json({ files: db, storageUsed: totalSize });
+  userFiles.forEach(file => { if(file.size) totalSize += file.size; });
+  res.json({ files: userFiles, storageUsed: totalSize });
 });
 
 app.get('/download/:id', authGuard, async (req, res) => {
@@ -318,7 +470,63 @@ app.post('/profile', authGuard, upload.single('profilePic'), (req, res) => {
   res.json({ success: true, profile });
 });
 
-// Default routes
-app.get('/', (req, res) => res.redirect('/login.html'));
+// -------------------- User Settings (Telegram) --------------------
+app.post('/settings/telegram', authGuard, (req, res) => {
+  const { telegramChatId, telegramBotToken } = req.body;
+  const username = req.session.user.username;
+
+  const users = loadUsers();
+  if (!users[username]) {
+    return res.status(404).json({ success: false, msg: 'User not found' });
+  }
+
+  users[username].telegramChatId = telegramChatId || null;
+  saveUsers(users);
+
+  const profilePath = path.join(__dirname, 'data', 'profile.json');
+  let profile = fs.existsSync(profilePath) ? JSON.parse(fs.readFileSync(profilePath, 'utf8')) : {};
+  profile[username] = { ...profile[username], telegramChatId };
+  fs.writeFileSync(profilePath, JSON.stringify(profile, null, 2));
+
+  res.json({ success: true, msg: 'Telegram settings updated' });
+});
+
+// -------------------- Admin Panel Files (All users) --------------------
+app.get('/admin/files', authGuard, (req, res) => {
+  if (req.session.user.username !== 'admin') {
+    return res.status(403).json({ success: false, msg: 'Admin only' });
+  }
+  const dbPath = path.join(__dirname, 'data', 'files.json');
+  const allFiles = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath, 'utf8')) : [];
+  res.json({ success: true, files: allFiles });
+});
+
+// Default routes - serve landing page
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'landing.html')));
+app.get('/index', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
+// Session user info API
+app.get('/user-info', authGuard, (req, res) => {
+  const users = loadUsers();
+  const user = users[req.session.user.username];
+  res.json({
+    username: req.session.user.username,
+    name: user?.name || '',
+    email: user?.email || '',
+    mobile: user?.mobile || '',
+    telegramChatId: user?.telegramChatId || null,
+    storageLimit: user?.storageLimit || (10 * 1024 * 1024 * 1024),
+    status: user?.status || 'active',
+    isAdmin: req.session.user.username === 'admin'
+  });
+});
+
+// Get user's own files only
+app.get('/my-files', authGuard, (req, res) => {
+  const dbPath = path.join(__dirname, 'data', 'files.json');
+  const allFiles = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath, 'utf8')) : [];
+  // For now, return all files (in production, filter by user)
+  res.json({ files: allFiles });
+});
 
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

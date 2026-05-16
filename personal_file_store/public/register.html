@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amanat - Create Account</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .lang-toggle {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      z-index: 100;
+      display: flex;
+      gap: 8px;
+    }
+    .lang-btn {
+      padding: 6px 12px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 15px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .lang-btn.active { background: var(--primary); color: white; }
+    [data-lang="bn"] { display: none; }
+    .back-btn {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      z-index: 100;
+      padding: 8px 16px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+    .back-btn:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .password-strength {
+      margin-top: 8px;
+    }
+    .strength-bar {
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+    .strength-fill {
+      height: 100%;
+      width: 0;
+      transition: all 0.3s;
+      border-radius: 2px;
+    }
+    .strength-text {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .telegram-note {
+      background: rgba(0, 136, 204, 0.1);
+      border: 1px solid rgba(0, 136, 204, 0.3);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .telegram-note h4 { color: #0088cc; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .telegram-note p { color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+    .telegram-note ol { color: var(--text-muted); font-size: 13px; margin-left: 20px; }
+    .step-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      background: var(--success);
+      border-radius: 12px;
+      font-size: 11px;
+      margin-left: 8px;
+    }
+    .verified-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: rgba(52, 199, 89, 0.2);
+      border-radius: 20px;
+      color: var(--success);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body class="landing-body">
+  <!-- Back Button -->
+  <a href="/login.html" class="back-btn"><i class="fas fa-arrow-left"></i> <span data-lang="en">Back</span><span data-lang="bn">ফিরে</span></a>
+
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('en')">English</button>
+    <button class="lang-btn" onclick="setLang('bn')">বাংলা</button>
+  </div>
+
+  <div class="orb-container">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+  </div>
+
+  <div class="logo-container">
+    <div class="logo-glow"></div>
+    <div class="logo-box"><i class="fas fa-cloud"></i></div>
+  </div>
+
+  <div class="form-container glass">
+    <div class="form-header">
+      <h1><span data-lang="en">Create Account</span><span data-lang="bn">অ্যাকাউন্ট তৈরি করুন</span></h1>
+      <p><span data-lang="en">Connect with Telegram to use the system</span><span data-lang="bn">সিস্টেম ব্যবহার করতে টেলিগ্রামের সাথে কানেক্ট করুন</span></p>
+    </div>
+
+    <!-- Telegram Connection Optional -->
+    <div class="telegram-note" id="telegramInfo">
+      <h4><i class="fab fa-telegram"></i>
+        <span data-lang="en">Telegram Connection (Optional)</span>
+        <span data-lang="bn">টেলিগ্রাম কানেকশন (ঐচ্ছিক)</span>
+        <span class="step-badge" style="background: var(--accent);" id="tgStatus">
+          <span data-lang="en">Optional</span>
+          <span data-lang="bn">ঐচ্ছিক</span>
+        </span>
+      </h4>
+      <p>
+        <span data-lang="en">Connect your Telegram to store files securely. You can also connect later from your profile.</span>
+        <span data-lang="bn">ফাইল নিরাপদে সংরক্ষণ করতে আপনার টেলিগ্রাম কানেক্ট করুন। পরে প্রোফাইল থেকেও কানেক্ট করতে পারবেন।</span>
+      </p>
+      <ol>
+        <li><span data-lang="en">Open Telegram and search for </span><span data-lang="bn">টেলিগ্রামে সার্চ করুন </span><strong>@AmanatFileBot</strong></li>
+        <li><span data-lang="en">Send /start to the bot</span><span data-lang="bn">বটে /start মেসেজ পাঠান</span></li>
+        <li><span data-lang="en">Copy your Chat ID from the bot response</span><span data-lang="bn">বটের মেসেজ থেকে আপনার Chat ID কপি করুন</span></li>
+        <li><span data-lang="en">Enter the Chat ID below</span><span data-lang="bn">নিচে Chat ID লিখুন</span></li>
+      </ol>
+    </div>
+
+    <form id="registerForm">
+      <!-- Name -->
+      <div class="form-group">
+        <label><i class="fas fa-id-card"></i> <span data-lang="en">Full Name</span><span data-lang="bn">পুরো নাম</span></label>
+        <div class="input-wrapper">
+          <i class="fas fa-user"></i>
+          <input type="text" id="regName" placeholder="Enter your full name" required>
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label><i class="fas fa-envelope"></i> <span data-lang="en">Email Address</span><span data-lang="bn">ইমেইল ঠিকানা</span></label>
+        <div class="input-wrapper">
+          <i class="fas fa-envelope"></i>
+          <input type="email" id="regEmail" placeholder="example@email.com" required>
+        </div>
+      </div>
+
+      <!-- Mobile -->
+      <div class="form-group">
+        <label><i class="fas fa-phone"></i> <span data-lang="en">Mobile Number</span><span data-lang="bn">মোবাইল নম্বর</span></label>
+        <div class="input-wrapper">
+          <i class="fas fa-phone"></i>
+          <input type="tel" id="regMobile" placeholder="+8801XXXXXXXXX" required>
+        </div>
+      </div>
+
+      <!-- Username -->
+      <div class="form-group">
+        <label><i class="fas fa-at"></i> <span data-lang="en">Username</span><span data-lang="bn">ব্যবহারকারীর নাম</span></label>
+        <div class="input-wrapper">
+          <i class="fas fa-user"></i>
+          <input type="text" id="regUsername" placeholder="Choose username" required>
+        </div>
+      </div>
+
+      <!-- Password with strength -->
+      <div class="form-group">
+        <label><i class="fas fa-lock"></i> <span data-lang="en">Password</span><span data-lang="bn">পাসওয়ার্ড</span></label>
+        <div class="input-wrapper">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="regPassword" placeholder="Create password" required oninput="checkPasswordStrength(this.value)">
+        </div>
+        <div class="password-strength" id="passwordStrength">
+          <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+          <span class="strength-text" id="strengthText"></span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label><span data-lang="en">Confirm Password</span><span data-lang="bn">পাসওয়ার্ড নিশ্চিত করুন</span></label>
+        <div class="input-wrapper">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="regPasswordConfirm" placeholder="Confirm password" required>
+        </div>
+      </div>
+
+      <!-- Telegram Chat ID - Optional -->
+      <div class="form-group">
+        <label>
+          <i class="fab fa-telegram" style="color: #0088cc;"></i>
+          <span data-lang="en">Telegram Chat ID (Optional)</span>
+          <span data-lang="bn">টেলিগ্রাম Chat ID (ঐচ্ছিক)</span>
+        </label>
+        <div class="input-wrapper">
+          <i class="fas fa-id-card"></i>
+          <input type="text" id="telegramChatId" placeholder="e.g., 123456789">
+        </div>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+          <span data-lang="en">Get your Chat ID from @AmanatFileBot (Optional)</span>
+          <span data-lang="bn">@AmanatFileBot থেকে আপনার Chat ID পান (ঐচ্ছিক)</span>
+        </p>
+      </div>
+
+      <!-- Math CAPTCHA -->
+      <div class="form-group">
+        <label><span data-lang="en">Security Check</span><span data-lang="bn">নিরাপত্তা যাচাই</span></label>
+        <div class="captcha-box" id="regCaptcha" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 12px; text-align: center; border: 1px solid var(--glass-border);">
+          <span id="captchaText" style="font-size: 18px; font-weight: 600;">3 + 4 = ?</span>
+        </div>
+        <div class="input-wrapper">
+          <i class="fas fa-calculator"></i>
+          <input type="number" id="captchaAnswer" placeholder="Answer" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary form-btn">
+        <i class="fas fa-user-plus"></i>
+        <span data-lang="en">Create Account</span>
+        <span data-lang="bn">অ্যাকাউন্ট তৈরি করুন</span>
+      </button>
+    </form>
+
+    <div id="registerError" style="display: none; color: var(--danger); margin-top: 16px; font-weight: 500; text-align: center;"></div>
+
+    <div class="form-footer">
+      <p><span data-lang="en">Already have account?</span><span data-lang="bn">অ্যাকাউন্ট আছে?</span> <a href="/login.html"><span data-lang="en">Login</span><span data-lang="bn">প্রবেশ করুন</span></a></p>
+    </div>
+  </div>
+
+  <!-- Analyzing Screen -->
+  <div class="analyzing-screen" id="analyzingScreen">
+    <div class="analyzing-logo"><i class="fas fa-cloud"></i></div>
+    <h2>Amanat</h2>
+    <div class="analyzing-progress"><div class="analyzing-bar"></div></div>
+    <div class="analyzing-text" id="analyzingText"><span data-lang="en">Creating account...</span><span data-lang="bn">অ্যাকাউন্ট তৈরি হচ্ছে...</span></div>
+    <div class="analyzing-dots"><span></span><span></span><span></span></div>
+  </div>
+
+  <script src="animations.js"></script>
+  <script>
+    let currentLang = 'en';
+
+    // Password Strength Checker
+    function checkPasswordStrength(password) {
+      const fill = document.getElementById('strengthFill');
+      const text = document.getElementById('strengthText');
+      let strength = 0;
+      if (password.length >= 8) strength += 1;
+      if (password.match(/[A-Z]/)) strength += 1;
+      if (password.match(/[0-9]/)) strength += 1;
+      if (password.match(/[^A-Za-z0-9]/)) strength += 1;
+
+      const colors = ['var(--danger)', '#ff9800', '#ffeb3b', '#8bc34a', 'var(--success)'];
+      const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+
+      fill.style.width = (strength * 25) + '%';
+      fill.style.background = colors[strength] || colors[0];
+      text.textContent = labels[strength] || '';
+    }
+
+    function setLang(lang) {
+      currentLang = lang;
+      document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      if (lang === 'bn') {
+        document.querySelectorAll('[data-lang="en"]').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('[data-lang="bn"]').forEach(el => el.style.display = 'inline');
+      } else {
+        document.querySelectorAll('[data-lang="bn"]').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('[data-lang="en"]').forEach(el => el.style.display = 'inline');
+      }
+    }
+
+    // Captcha
+    let captchaAnswer = 7;
+    (function refreshCaptcha() {
+      const n1 = Math.floor(Math.random() * 10);
+      const n2 = Math.floor(Math.random() * 10);
+      captchaAnswer = n1 + n2;
+      document.getElementById('captchaText').textContent = n1 + ' + ' + n2 + ' = ?';
+    })();
+
+    // Register
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const name = document.getElementById('regName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const mobile = document.getElementById('regMobile').value.trim();
+      const username = document.getElementById('regUsername').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const confirm = document.getElementById('regPasswordConfirm').value;
+      const chatId = document.getElementById('telegramChatId').value.trim();
+      const captchaVal = parseInt(document.getElementById('captchaAnswer').value);
+      const errorEl = document.getElementById('registerError');
+
+      if (!name || !email || !mobile || !username || !password) {
+        showError(currentLang === 'en' ? 'All fields are required!' : 'সব তথ্য পূরণ করুন!');
+        return;
+      }
+
+      if (password !== confirm) {
+        showError(currentLang === 'en' ? 'Passwords do not match!' : 'পাসওয়ার্ড মিলেনি!');
+        return;
+      }
+
+      if (password.length < 6) {
+        showError(currentLang === 'en' ? 'Password must be at least 6 characters!' : 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে!');
+        return;
+      }
+
+      if (captchaVal !== captchaAnswer) {
+        showError(currentLang === 'en' ? 'Wrong math answer!' : 'গাণিতিক উত্তর ভুল!');
+        refreshCaptcha();
+        return;
+      }
+
+      const btn = e.target.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+
+      try {
+        const res = await fetch('/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, mobile, username, password, telegramChatId: chatId })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          const analyzingScreen = document.getElementById('analyzingScreen');
+          const analyzingText = document.getElementById('analyzingText');
+          analyzingScreen.classList.add('active');
+
+          const msgs = currentLang === 'en' ? [
+            { text: 'Verifying data...', delay: 500 },
+            { text: 'Checking username...', delay: 700 },
+            { text: 'Encrypting password...', delay: 600 },
+            { text: 'Connecting to Telegram...', delay: 800 },
+            { text: 'Updating database...', delay: 500 },
+            { text: 'Creating session...', delay: 400 },
+            { text: 'Success!', delay: 300 }
+          ] : [
+            { text: 'তথ্য যাচাই করা হচ্ছে...', delay: 500 },
+            { text: 'ব্যবহারকারী চেক করা হচ্ছে...', delay: 700 },
+            { text: 'পাসওয়ার্ড এনক্রিপ্ট হচ্ছে...', delay: 600 },
+            { text: 'টেলিগ্রামে কানেক্ট হচ্ছে...', delay: 800 },
+            { text: 'ডাটাবেস আপডেট হচ্ছে...', delay: 500 },
+            { text: 'সেশন তৈরি হচ্ছে...', delay: 400 },
+            { text: 'সফল!', delay: 300 }
+          ];
+
+          let i = 0;
+          function next() {
+            if (i < msgs.length) { analyzingText.innerHTML = msgs[i].text; setTimeout(next, msgs[i].delay); i++; }
+            else { setTimeout(() => { showToast(currentLang === 'en' ? 'Account created! Please login.' : 'অ্যাকাউন্ট তৈরি হয়েছে! প্রবেশ করুন।', 'success'); window.location.href = '/login.html'; }, 500); }
+          }
+          next();
+        } else {
+          showError(data.msg || (currentLang === 'en' ? 'Registration failed!' : 'রেজিস্ট্রেশন ব্যর্থ!'));
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+        }
+      } catch(err) {
+        showError(currentLang === 'en' ? 'Network error!' : 'নেটওয়ার্ক ত্রুটি!');
+        btn.disabled = false;
+      }
+    });
+
+    function showError(msg) {
+      document.getElementById('registerError').innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + msg;
+      document.getElementById('registerError').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

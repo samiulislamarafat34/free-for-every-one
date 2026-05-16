@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amanat - Admin Panel</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .admin-container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+    .admin-title { font-size: 1.8rem; font-weight: 700; background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .stat-card { padding: 20px; border-radius: 16px; text-align: center; }
+    .stat-number { font-size: 2rem; font-weight: 700; }
+    .stat-label { color: var(--text-muted); font-size: 0.9rem; }
+    .users-table { width: 100%; border-collapse: collapse; }
+    .users-table th, .users-table td { padding: 15px; text-align: left; border-bottom: 1px solid var(--glass-border); }
+    .users-table th { background: rgba(255,255,255,0.05); font-weight: 600; }
+    .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; }
+    .status-active { background: rgba(52,199,89,0.2); color: var(--success); }
+    .status-suspended { background: rgba(255,59,48,0.2); color: var(--danger); }
+    .action-btn { padding: 6px 12px; border-radius: 8px; border: none; cursor: pointer; font-size: 12px; margin-right: 5px; }
+    .btn-suspend { background: rgba(255,149,0,0.2); color: #ff9500; }
+    .btn-activate { background: rgba(52,199,89,0.2); color: var(--success); }
+    .btn-delete { background: rgba(255,59,48,0.2); color: var(--danger); }
+    .files-section { margin-top: 40px; }
+    .file-card { display: inline-block; padding: 10px 15px; margin: 5px; border-radius: 10px; background: var(--glass-bg); border: 1px solid var(--glass-border); }
+    .files-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-header">
+      <div>
+        <h1 class="admin-title"><i class="fas fa-shield-alt"></i> Admin Panel</h1>
+        <p style="color: var(--text-muted);">Manage all users and files</p>
+      </div>
+      <a href="/dashboard.html" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Dashboard</a>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card glass">
+        <div class="stat-number" id="totalUsers">0</div>
+        <div class="stat-label">Total Users</div>
+      </div>
+      <div class="stat-card glass">
+        <div class="stat-number" id="totalFiles">0</div>
+        <div class="stat-label">Total Files</div>
+      </div>
+      <div class="stat-card glass">
+        <div class="stat-number" id="activeUsers">0</div>
+        <div class="stat-label">Active Users</div>
+      </div>
+      <div class="stat-card glass">
+        <div class="stat-number" id="suspendedUsers">0</div>
+        <div class="stat-label">Suspended Users</div>
+      </div>
+    </div>
+
+    <div class="glass" style="padding: 20px; border-radius: 16px;">
+      <h2 style="margin-bottom: 20px;"><i class="fas fa-users"></i> User Management</h2>
+      <div style="overflow-x: auto;">
+        <table class="users-table" id="usersTable">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Mobile</th>
+              <th>Telegram</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="files-section glass" style="padding: 20px; border-radius: 16px;">
+      <h2 style="margin-bottom: 20px;"><i class="fas fa-folder"></i> All Files</h2>
+      <div class="files-grid" id="allFilesGrid"></div>
+    </div>
+  </div>
+
+  <script>
+    async function loadAdminData() {
+      try {
+        const usersRes = await fetch('/admin/users');
+        const usersData = await usersRes.json();
+
+        if (!usersData.success) {
+          alert('Access denied!');
+          window.location.href = '/dashboard.html';
+          return;
+        }
+
+        const users = usersData.users;
+        document.getElementById('totalUsers').textContent = users.length;
+        document.getElementById('activeUsers').textContent = users.filter(u => u.status === 'active').length;
+        document.getElementById('suspendedUsers').textContent = users.filter(u => u.status === 'suspended').length;
+
+        const tbody = document.getElementById('usersBody');
+        tbody.innerHTML = users.map(u => `
+          <tr>
+            <td><strong>${u.username}</strong></td>
+            <td>${u.name || '-'}</td>
+            <td>${u.email || '-'}</td>
+            <td>${u.mobile || '-'}</td>
+            <td>${u.telegramChatId || '<span style="color:var(--text-muted)">Not connected</span>'}</td>
+            <td><span class="status-badge ${u.status === 'active' ? 'status-active' : 'status-suspended'}">${u.status}</span></td>
+            <td>
+              ${u.status === 'active' ?
+                `<button class="action-btn btn-suspend" onclick="suspendUser('${u.username}')"><i class="fas fa-pause"></i> Suspend</button>` :
+                `<button class="action-btn btn-activate" onclick="activateUser('${u.username}')"><i class="fas fa-play"></i> Activate</button>`
+              }
+              ${u.username !== 'admin' ? `<button class="action-btn btn-delete" onclick="deleteUser('${u.username}')"><i class="fas fa-trash"></i></button>` : ''}
+            </td>
+          </tr>
+        `).join('');
+
+        // Load all files
+        const filesRes = await fetch('/admin/files');
+        const filesData = await filesRes.json();
+        document.getElementById('totalFiles').textContent = filesData.files.length;
+
+        const filesGrid = document.getElementById('allFilesGrid');
+        filesGrid.innerHTML = filesData.files.map(f => `
+          <div class="file-card">
+            <i class="fas ${f.type === 'photo' ? 'fa-image' : f.type === 'video' ? 'fa-video' : f.type === 'audio' ? 'fa-music' : 'fa-file-alt'}"></i>
+            <strong>${f.name}</strong><br>
+            <small style="color:var(--text-muted)">${f.username}</small><br>
+            <small style="color:var(--text-muted)">${formatBytes(f.size)}</small>
+          </div>
+        `).join('');
+
+      } catch(e) {
+        console.error(e);
+      }
+    }
+
+    function formatBytes(bytes) {
+      if (!bytes) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    async function suspendUser(username) {
+      if (!confirm('Suspend this user?')) return;
+      await fetch('/admin/user/suspend', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ username, status: 'suspended' })
+      });
+      loadAdminData();
+    }
+
+    async function activateUser(username) {
+      await fetch('/admin/user/suspend', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ username, status: 'active' })
+      });
+      loadAdminData();
+    }
+
+    async function deleteUser(username) {
+      if (!confirm('Delete this user and all their files?')) return;
+      await fetch('/admin/user/delete', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ username })
+      });
+      loadAdminData();
+    }
+
+    loadAdminData();
+  </script>
+</body>
+</html>

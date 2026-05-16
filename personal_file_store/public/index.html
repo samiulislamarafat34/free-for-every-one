@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amanat - Premium Cloud Storage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .lang-toggle { position: fixed; top: 20px; right: 20px; z-index: 100; display: flex; gap: 8px; }
+    .lang-btn { padding: 8px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; color: var(--text-muted); cursor: pointer; font-size: 14px; transition: all 0.3s; }
+    .lang-btn.active { background: var(--primary); color: white; }
+    [data-lang="bn"] { display: none; }
+    .landing-page { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    .landing-box { max-width: 450px; width: 100%; text-align: center; padding: 50px 40px; }
+    .landing-logo { font-size: 4rem; margin-bottom: 1.5rem; background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: glow 2s infinite alternate; }
+    @keyframes glow { from { filter: drop-shadow(0 0 20px rgba(102,126,234,0.5)); } to { filter: drop-shadow(0 0 40px rgba(102,126,234,0.8)); } }
+    .landing-title { font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .landing-desc { color: var(--text-muted); margin-bottom: 2rem; font-size: 1rem; line-height: 1.6; }
+    .landing-btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+    .landing-footer { margin-top: 2rem; color: var(--text-muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body class="landing-body">
+  <!-- Language Toggle -->
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('en')">English</button>
+    <button class="lang-btn" onclick="setLang('bn')">বাংলা</button>
+  </div>
+
+  <div class="orb-container">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+  </div>
+
+  <div class="landing-page">
+    <div class="glass landing-box">
+      <div class="landing-logo"><i class="fas fa-cloud"></i></div>
+      <h1 class="landing-title">Amanat</h1>
+      <p class="landing-desc">
+        <span data-lang="en">Secure cloud storage with Telegram backend. Create your free account to store files, notes, and more.</span>
+        <span data-lang="bn">টেলিগ্রাম ব্যাকএন্ড সহ নিরাপদ ক্লাউড স্টোরেজ। ফাইল, নোট এবং আরও অনেক কিছু সংরক্ষণ করতে বিনামূল্যে অ্যাকাউন্ট তৈরি করুন।</span>
+      </p>
+
+      <div class="landing-btn-group">
+        <a href="/login.html" class="btn btn-primary">
+          <i class="fas fa-sign-in-alt"></i>
+          <span data-lang="en">Login</span>
+          <span data-lang="bn">প্রবেশ করুন</span>
+        </a>
+        <a href="/register.html" class="btn btn-outline">
+          <i class="fas fa-user-plus"></i>
+          <span data-lang="en">Create New Account</span>
+          <span data-lang="bn">নতুন অ্যাকাউন্ট তৈরি করুন</span>
+        </a>
+      </div>
+
+      <p class="landing-footer">
+        <span data-lang="en">Built by Samiul Islam Arafat</span>
+        <span data-lang="bn">তৈরি করেছেন সামিউল ইসলাম আরাফাত</span>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    function setLang(lang) {
+      document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      if (lang === 'bn') {
+        document.querySelectorAll('[data-lang="en"]').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('[data-lang="bn"]').forEach(el => el.style.display = 'inline');
+      } else {
+        document.querySelectorAll('[data-lang="bn"]').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('[data-lang="en"]').forEach(el => el.style.display = 'inline');
+      }
+    }
+  </script>
+</body>
+</html>
