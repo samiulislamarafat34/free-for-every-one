@@ -1,53 +1,56 @@
+const fs = require('fs/promises');
+const path = require('path');
 const { MongoClient } = require('mongodb');
-const bcrypt = require('bcryptjs');
+require('dotenv').config();
 
-const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://samiulislamarafat34:sia%4047874634@amanat-storage.yjwhqvm.mongodb.net/?appName=amanat-storage';
+const DATA_DIR = path.join(__dirname, 'data');
+const STATE_COLLECTION = 'app_state';
 
-async function seed() {
-  const client = new MongoClient(mongoUri);
-  await client.connect();
-  const db = client.db('amanat-storage');
+const files = [
+  ['files', []],
+  ['folders', []],
+  ['notes', []],
+  ['contacts', []],
+  ['devices', []],
+  ['settings', {}],
+  ['users', {}],
+  ['profile', {}]
+];
 
-  const users = {
-    admin: {
-      passwordHash: bcrypt.hashSync('admin123', 10),
-      name: 'Admin',
-      email: 'admin@amanat.com',
-      mobile: '0000000000',
-      telegramChatId: null,
-      storageLimit: 10 * 1024 * 1024 * 1024,
-      createdAt: Date.now(),
-      status: 'active'
-    },
-    'samiul.islam.arafat34': {
-      passwordHash: '$2a$10$pbUEPpaJIGGq6hqWSq8I2e3TNz/KGVxC/L9cm6uWUZY1d8fipl65m',
-      name: 'Samiul Islam Arafat',
-      email: 'samiul@example.com',
-      mobile: '01700000000',
-      storageLimit: 10 * 1024 * 1024 * 1024,
-      createdAt: 1778870354099,
-      status: 'active'
-    },
-    'samiya.salam.ispa': {
-      passwordHash: '$2a$10$XvdfRRfQdCX2RveLXE.7nufLHhSA1L5lKtJ0DjffJjU/tz45855Re',
-      name: 'Samiya Salam',
-      email: 'samiya@example.com',
-      mobile: '01800000000',
-      telegramChatId: null,
-      storageLimit: 10 * 1024 * 1024 * 1024,
-      createdAt: 1778900636317,
-      status: 'active'
-    }
-  };
-
-  await db.collection('users').replaceOne(
-    { _id: 'allUsers' },
-    { data: users },
-    { upsert: true }
-  );
-
-  console.log('Users seeded successfully!');
-  await client.close();
+async function readLocalJson(name, fallback) {
+  try {
+    const raw = await fs.readFile(path.join(DATA_DIR, `${name}.json`), 'utf8');
+    return raw.trim() ? JSON.parse(raw) : fallback;
+  } catch (error) {
+    if (error.code === 'ENOENT') return fallback;
+    throw error;
+  }
 }
 
-seed().catch(console.error);
+async function seed() {
+  if (!process.env.MONGODB_URI) {
+    throw new Error('MONGODB_URI is required. Copy .env.example to .env and fill it first.');
+  }
+
+  const client = new MongoClient(process.env.MONGODB_URI);
+  await client.connect();
+  const db = client.db(process.env.MONGODB_DB || 'personal_file_store');
+
+  for (const [name, fallback] of files) {
+    const value = await readLocalJson(name, fallback);
+    await db.collection(STATE_COLLECTION).updateOne(
+      { _id: name },
+      { $set: { value, updatedAt: new Date() } },
+      { upsert: true }
+    );
+    console.log(`Migrated ${name}.json to MongoDB`);
+  }
+
+  await client.close();
+  console.log('MongoDB migration complete.');
+}
+
+seed().catch((error) => {
+  console.error(error.message);
+  process.exitCode = 1;
+});

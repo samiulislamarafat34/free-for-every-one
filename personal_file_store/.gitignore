@@ -3,3 +3,7 @@ temp/
 .env
 *.log
 .DS_Store
+data/*.json
+data/*.bak
+public/uploads/*
+!public/uploads/.gitkeep

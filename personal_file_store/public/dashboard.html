@@ -1,513 +1,1781 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Amanat - Dashboard</title>
+  <title>Amanat Cloud - Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <style>
-    .folder-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; margin-bottom: 30px; }
-    .folder-card { padding: 24px; text-align: center; cursor: pointer; transition: all 0.3s; }
-    .folder-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-    .folder-icon { width: 60px; height: 60px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; border-radius: 16px; }
-    .folder-card h4 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
-    .folder-card p { font-size: 12px; color: var(--text-muted); }
+    :root {
+      --page: #f7f8fb;
+      --panel: #ffffff;
+      --panel-soft: #f0f4f8;
+      --line: #d9e2ec;
+      --ink: #122033;
+      --muted: #64748b;
+      --blue: #2563eb;
+      --teal: #0f766e;
+      --red: #dc2626;
+      --amber: #d97706;
+      --green: #16a34a;
+      --shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+      --glass: rgba(255, 255, 255, .72);
+      --glass-line: rgba(255, 255, 255, .68);
+    }
 
-    .file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
-    .file-item { padding: 16px; text-align: center; cursor: pointer; transition: all 0.3s; border-radius: 16px; position: relative; }
-    .file-item:hover { transform: scale(1.05); box-shadow: 0 15px 30px rgba(0,122,255,0.3); }
-    .file-thumb { width: 100%; height: 100px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 12px; overflow: hidden; }
-    .file-thumb img { width: 100%; height: 100%; object-fit: cover; }
-    .file-item h4 { font-size: 13px; font-weight: 500; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .file-item p { font-size: 11px; color: var(--text-muted); }
+    * { letter-spacing: 0; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(120deg, rgba(37,99,235,.12), transparent 28%),
+        linear-gradient(250deg, rgba(15,118,110,.10), transparent 30%),
+        var(--page);
+      background-attachment: fixed;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
 
-    .back-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; cursor: pointer; margin-bottom: 20px; transition: all 0.3s; }
-    .back-btn:hover { background: var(--glass-bg-light); transform: translateX(-5px); }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.22), transparent, rgba(255,255,255,.18));
+      opacity: .45;
+      animation: lightSweep 14s ease-in-out infinite alternate;
+      z-index: -1;
+    }
 
-    .upload-modal .modal-content { max-width: 600px; }
-    .upload-area-multiple { border: 2px dashed var(--glass-border); padding: 40px; text-align: center; border-radius: 20px; cursor: pointer; transition: all 0.3s; }
-    .upload-area-multiple:hover { border-color: var(--primary); background: rgba(0,113,227,0.1); }
-    .upload-area-multiple i { font-size: 48px; margin-bottom: 16px; background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .upload-area-multiple h3 { margin-bottom: 8px; }
-    .upload-area-multiple p { color: var(--text-muted); font-size: 14px; }
+    .app-shell {
+      display: grid;
+      grid-template-columns: 264px minmax(0, 1fr);
+      min-height: 100vh;
+    }
 
-    .upload-progress-container { margin-top: 20px; }
-    .upload-file-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 8px; }
-    .upload-file-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-    .upload-file-info { flex: 1; }
-    .upload-file-name { font-size: 13px; font-weight: 500; }
-    .upload-file-size { font-size: 11px; color: var(--text-muted); }
-    .upload-file-status { font-size: 12px; }
-    .upload-file-status.pending { color: var(--text-muted); }
-    .upload-file-status.uploading { color: var(--primary); }
-    .upload-file-status.done { color: var(--success); }
-    .upload-file-status.error { color: var(--danger); }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 22px 18px;
+      background: rgba(15, 23, 42, .92);
+      backdrop-filter: blur(22px);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
 
-    .upload-limit-note { text-align: center; margin-top: 16px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; font-size: 13px; color: var(--text-muted); }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 8px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
 
-    .storage-warning { background: rgba(255,159,10,0.1); border: 1px solid rgba(255,159,10,0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
-    .storage-warning i { color: var(--warning); font-size: 24px; }
-    .storage-warning p { font-size: 14px; }
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: #2563eb;
+      color: #fff;
+      flex: 0 0 auto;
+      animation: floatMark 4s ease-in-out infinite;
+    }
 
-    /* Media Player Modal */
-    .media-player-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; display: none; flex-direction: column; }
-    .media-player-modal.active { display: flex; }
-    .media-player-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; }
-    .media-player-title { font-size: 18px; font-weight: 600; }
-    .media-player-close { width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; }
-    .media-player-content { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
-    .media-player-content img { max-width: 90%; max-height: 80vh; border-radius: 12px; }
-    .media-player-content video { max-width: 90%; max-height: 80vh; border-radius: 12px; }
-    .media-player-content audio { width: 80%; max-width: 600px; }
+    .brand h1 {
+      font-size: 18px;
+      line-height: 1.1;
+      margin: 0;
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      color: #94a3b8;
+      font-size: 12px;
+    }
+
+    .nav-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .nav-button {
+      width: 100%;
+      height: 44px;
+      border: 0;
+      border-radius: 8px;
+      padding: 0 12px;
+      background: transparent;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 600;
+      text-align: left;
+    }
+
+    .nav-button i { width: 18px; text-align: center; }
+    .nav-button:hover, .nav-button.active { background: #1e293b; color: #fff; }
+    .nav-button.active { box-shadow: inset 3px 0 0 #38bdf8; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 14px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.06);
+      color: #cbd5e1;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .main {
+      min-width: 0;
+      padding: 28px;
+    }
+
+    .profile-chip {
+      min-height: 48px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.8);
+      backdrop-filter: blur(18px);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 12px 5px 5px;
+      cursor: pointer;
+      color: var(--ink);
+      font: inherit;
+      font-weight: 800;
+    }
+
+    .profile-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--blue), var(--teal));
+      box-shadow: 0 8px 24px rgba(37, 99, 235, .28);
+    }
+
+    .topbar {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .page-title h2 {
+      margin: 0;
+      font-size: clamp(26px, 4vw, 40px);
+      line-height: 1.05;
+      color: var(--ink);
+    }
+
+    .page-title p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .icon-btn, .soft-btn, .primary-btn, .danger-btn {
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      padding: 0 14px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .icon-btn { width: 40px; padding: 0; }
+    .primary-btn { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .danger-btn { background: #fff; border-color: #fecaca; color: var(--red); }
+    .soft-btn:hover, .icon-btn:hover { background: var(--panel-soft); }
+    .primary-btn:disabled, .soft-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .stats-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .panel, .stat-tile, .file-card, .folder-chip, .note-item, .device-row, .contact-row {
+      background: var(--glass);
+      border: 1px solid var(--glass-line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(22px);
+    }
+
+    .panel { padding: 20px; }
+    .panel, .stat-tile { animation: panelIn .45s ease both; }
+    .stat-tile { padding: 18px; min-height: 122px; }
+    .stat-tile span { color: var(--muted); font-size: 13px; font-weight: 700; }
+    .stat-tile strong { display: block; margin-top: 12px; font-size: 30px; line-height: 1; }
+    .stat-tile i { float: right; color: var(--blue); font-size: 20px; }
+
+    .storage-bar {
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #e2e8f0;
+      margin: 16px 0 10px;
+    }
+
+    .storage-fill {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #2563eb, #0f766e);
+      transition: width .35s ease;
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: grid;
+      gap: 18px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr);
+      gap: 18px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .section-head h3, .panel h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .section-head p, .panel-subtitle {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .tabs, .folders {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .tab-btn, .folder-chip {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 12px;
+      background: #fff;
+      color: var(--muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      font: inherit;
+      font-weight: 700;
+    }
+
+    .tab-btn.active, .folder-chip.active {
+      background: #dbeafe;
+      color: #1d4ed8;
+      border-color: #bfdbfe;
+    }
+
+    .upload-zone {
+      border: 1px dashed #94a3b8;
+      border-radius: 8px;
+      padding: 26px;
+      text-align: center;
+      background: rgba(248,250,252,.78);
+      cursor: pointer;
+      margin: 0;
+      backdrop-filter: blur(18px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .upload-zone::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      transform: translateX(-100%);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent);
+      animation: shimmer 3.8s ease-in-out infinite;
+    }
+
+    .upload-zone i { color: var(--blue); font-size: 34px; margin-bottom: 10px; }
+    .upload-zone h3 { margin: 0 0 6px; font-size: 18px; }
+    .upload-zone p { margin: 0; color: var(--muted); font-size: 13px; }
+
+    .file-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 14px;
+    }
+
+    .file-card {
+      padding: 0;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform .18s ease, border-color .18s ease;
+      text-align: left;
+    }
+
+    .file-card:hover {
+      transform: translateY(-3px);
+      border-color: #93c5fd;
+      box-shadow: var(--shadow);
+    }
+
+    .thumb {
+      height: 124px;
+      background: #e2e8f0;
+      display: grid;
+      place-items: center;
+      color: var(--blue);
+      font-size: 30px;
+      overflow: hidden;
+    }
+
+    .thumb img, .thumb video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .file-meta {
+      padding: 12px;
+    }
+
+    .file-meta h4 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+      line-height: 1.35;
+      min-height: 36px;
+    }
+
+    .file-meta p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px 12px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      min-height: 42px;
+    }
+
+    textarea { resize: vertical; min-height: 140px; line-height: 1.6; }
+    input:focus, textarea:focus, select:focus { outline: 3px solid #dbeafe; border-color: #60a5fa; }
+
+    .notes-layout {
+      display: grid;
+      grid-template-columns: 310px minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .note-list {
+      display: grid;
+      gap: 10px;
+      max-height: 620px;
+      overflow: auto;
+    }
+
+    .note-item {
+      padding: 12px;
+      cursor: pointer;
+      box-shadow: none;
+    }
+
+    .note-item.active { border-color: #60a5fa; background: #eff6ff; }
+    .note-item strong { display: block; margin-bottom: 4px; }
+    .note-item span { color: var(--muted); font-size: 12px; }
+
+    .note-title-field {
+      font-size: 24px;
+      font-weight: 800;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      padding-left: 0;
+    }
+
+    .contact-list, .device-list, .chat-log {
+      display: grid;
+      gap: 10px;
+    }
+
+    .contact-row, .device-row {
+      box-shadow: none;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .row-title {
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .row-muted {
+      color: var(--muted);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .status-pill {
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: #dcfce7;
+      color: #166534;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .status-pill.off { background: #fee2e2; color: #991b1b; }
+
+    .chat-log {
+      max-height: 420px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .message {
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      color: var(--ink);
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    .message.user {
+      background: #dbeafe;
+      margin-left: 28px;
+    }
+
+    .timer-face {
+      font-size: 44px;
+      font-weight: 800;
+      color: var(--teal);
+      margin: 12px 0;
+    }
+
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+
+    .calc-display {
+      background: #0f172a;
+      color: #fff;
+      border-radius: 8px;
+      height: 58px;
+      padding: 12px;
+      text-align: right;
+      font-size: 24px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .calc-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .calc-grid button {
+      height: 44px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      background: rgba(15,23,42,.78);
+      z-index: 50;
+      padding: 22px;
+    }
+
+    .modal.active {
+      display: grid;
+      place-items: center;
+    }
+
+    .viewer {
+      width: min(1100px, 100%);
+      height: min(760px, 92vh);
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .viewer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .viewer-head strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .viewer-body {
+      display: grid;
+      place-items: center;
+      background: #0f172a;
+      overflow: auto;
+    }
+
+    .viewer-body img, .viewer-body video, .viewer-body iframe {
+      max-width: 100%;
+      max-height: 100%;
+      border: 0;
+    }
+
+    .viewer-body iframe {
+      width: 100%;
+      height: 100%;
+      background: #fff;
+    }
+
+    .empty {
+      min-height: 150px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      background: #fff;
+      text-align: center;
+      padding: 22px;
+    }
+
+    .profile-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .profile-card {
+      min-height: 170px;
+      display: grid;
+      align-content: center;
+      gap: 8px;
+      color: white;
+      background: linear-gradient(135deg, #2563eb, #0f766e);
+      border-color: transparent;
+    }
+
+    .profile-card strong { font-size: 28px; }
+    .document-list { display: grid; gap: 10px; margin-top: 14px; }
+    .document-list div {
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.65);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .upload-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: none;
+      place-items: center;
+      background: rgba(15, 23, 42, .72);
+      backdrop-filter: blur(18px);
+      padding: 22px;
+    }
+
+    .upload-overlay.active { display: grid; }
+
+    .upload-card {
+      width: min(380px, 100%);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.28);
+      background: rgba(255,255,255,.14);
+      color: white;
+      padding: 28px;
+      text-align: center;
+      box-shadow: 0 24px 90px rgba(0,0,0,.36);
+    }
+
+    .upload-spinner {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      border: 5px solid rgba(255,255,255,.22);
+      border-top-color: #38bdf8;
+      border-right-color: #2dd4bf;
+      margin: 0 auto 18px;
+      animation: spin .8s linear infinite;
+    }
+
+    .upload-progress {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.18);
+      overflow: hidden;
+      margin-top: 18px;
+    }
+
+    .upload-progress span {
+      display: block;
+      width: 40%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #38bdf8, #2dd4bf);
+      animation: progressSlide 1.2s ease-in-out infinite alternate;
+    }
+
+    @keyframes lightSweep {
+      from { transform: translateX(-10%); }
+      to { transform: translateX(10%); }
+    }
+
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes floatMark {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    @keyframes shimmer {
+      0%, 60% { transform: translateX(-110%); }
+      100% { transform: translateX(110%); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes progressSlide {
+      from { transform: translateX(-30%); }
+      to { transform: translateX(180%); }
+    }
+
+    .toast-container { bottom: 22px; right: 22px; }
+    .toast { background: #fff; color: var(--ink); box-shadow: var(--shadow); border-radius: 8px; }
+
+    @media (max-width: 1080px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar {
+        position: static;
+        height: auto;
+      }
+      .nav-list {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+      .nav-button span { display: none; }
+      .nav-button { justify-content: center; }
+      .two-col, .notes-layout { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 640px) {
+      .main { padding: 18px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .stats-grid, .nav-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .file-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .contact-row, .device-row { align-items: flex-start; flex-direction: column; }
+      .action-row { width: 100%; }
+      .primary-btn, .soft-btn, .danger-btn { flex: 1 1 auto; }
+      .profile-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
-<body class="landing-body">
-  <div class="orb-container">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-    <div class="orb orb-4"></div>
-  </div>
-
-  <div class="dashboard-container">
-    <!-- Header -->
-    <div class="dashboard-header">
-      <div class="user-info">
-        <div class="user-avatar" id="userAvatar"><i class="fas fa-user"></i></div>
-        <div class="user-details">
-          <h2 id="userName">User</h2>
-          <p id="userEmail">Storage: <span id="storageLimit">10 GB</span></p>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon"><i class="fas fa-cloud"></i></div>
+        <div>
+          <h1 id="siteName">Amanat Cloud</h1>
+          <p>Personal study storage</p>
         </div>
       </div>
-      <button class="btn btn-outline" onclick="openModal('settingsModal')"><i class="fas fa-cog"></i> Settings</button>
-    </div>
 
-    <!-- Storage Warning (if > 80%) -->
-    <div class="storage-warning" id="storageWarning" style="display: none;">
-      <i class="fas fa-exclamation-triangle"></i>
-      <p>Storage is almost full! <span id="storagePercentWarn">0</span>% used.</p>
-    </div>
+      <nav class="nav-list" aria-label="Main navigation">
+        <button class="nav-button active" data-section="home" title="Home"><i class="fas fa-table-columns"></i><span>Home</span></button>
+        <button class="nav-button" data-section="media" title="Media"><i class="fas fa-photo-film"></i><span>Media</span></button>
+        <button class="nav-button" data-section="books" title="Books"><i class="fas fa-book"></i><span>Books</span></button>
+        <button class="nav-button" data-section="notes" title="Notes"><i class="fas fa-note-sticky"></i><span>Notes</span></button>
+        <button class="nav-button" data-section="contacts" title="Contacts"><i class="fas fa-address-book"></i><span>Contacts</span></button>
+        <button class="nav-button" data-section="profile" title="Profile"><i class="fas fa-id-card"></i><span>Profile</span></button>
+        <button class="nav-button" data-section="assistant" title="Assistant"><i class="fas fa-graduation-cap"></i><span>Assistant</span></button>
+        <button class="nav-button" data-section="tools" title="Tools"><i class="fas fa-toolbox"></i><span>Tools</span></button>
+        <button class="nav-button" data-section="devices" title="Devices"><i class="fas fa-laptop"></i><span>Devices</span></button>
+        <button class="nav-button" data-section="settings" title="Settings"><i class="fas fa-gear"></i><span>Settings</span></button>
+      </nav>
 
-    <!-- Storage Panel -->
-    <div class="storage-panel glass">
-      <div class="ripple-fill" id="rippleFill" style="height: 0%;"></div>
-      <div class="storage-content">
-        <div class="storage-header">
-          <h3><i class="fas fa-chart-pie"></i> Storage Usage</h3>
-          <span id="storagePercent">0% used</span>
-        </div>
-        <div class="storage-stats">
-          <span>Used: <span id="storageUsed">0 MB</span></span>
-          <span>Limit: <span id="storageTotal">10 GB</span></span>
-        </div>
+      <div class="sidebar-footer">
+        Uploads go to Telegram when your bot token and chat ID are connected. Without that, files stay in local fallback storage.
       </div>
-    </div>
+    </aside>
 
-    <!-- Folder View (Default) -->
-    <div id="folderView">
-      <div class="folder-view">
-        <div class="folder-card glass" onclick="openFolder('photo')">
-          <div class="folder-icon" style="background: var(--gradient-1);"><i class="fas fa-image"></i></div>
-          <h4>Photos</h4>
-          <p><span id="photoCount">0</span> files</p>
+    <main class="main">
+      <header class="topbar">
+        <div class="page-title">
+          <h2 id="pageTitle">Home</h2>
+          <p id="pageSubtitle">Your files, notes, books, devices, and study tools in one clear place.</p>
         </div>
-        <div class="folder-card glass" onclick="openFolder('video')">
-          <div class="folder-icon" style="background: var(--gradient-2);"><i class="fas fa-video"></i></div>
-          <h4>Videos</h4>
-          <p><span id="videoCount">0</span> files</p>
+        <div class="action-row">
+          <button class="soft-btn" id="connectStatus"><i class="fas fa-circle"></i> Checking</button>
+          <button class="primary-btn" data-section-jump="settings"><i class="fas fa-plug"></i> Connect Telegram</button>
+          <button class="profile-chip" data-section-jump="profile" title="Profile">
+            <span class="profile-avatar" id="profileInitial">A</span>
+            <span id="profileNameChip">Profile</span>
+          </button>
+          <button class="soft-btn" onclick="logout()"><i class="fas fa-arrow-right-from-bracket"></i> Logout</button>
         </div>
-        <div class="folder-card glass" onclick="openFolder('audio')">
-          <div class="folder-icon" style="background: var(--gradient-3);"><i class="fas fa-music"></i></div>
-          <h4>Audio</h4>
-          <p><span id="audioCount">0</span> files</p>
+      </header>
+
+      <section id="home" class="section active">
+        <div class="grid stats-grid">
+          <div class="stat-tile"><i class="fas fa-database"></i><span>Storage Used</span><strong id="usedStorage">0 MB</strong></div>
+          <div class="stat-tile"><i class="fas fa-file"></i><span>Total Files</span><strong id="totalFiles">0</strong></div>
+          <div class="stat-tile"><i class="fas fa-folder"></i><span>Folders</span><strong id="folderCount">0</strong></div>
+          <div class="stat-tile"><i class="fas fa-address-card"></i><span>Contacts</span><strong id="contactCount">0</strong></div>
         </div>
-        <div class="folder-card glass" onclick="openFolder('document')">
-          <div class="folder-icon" style="background: var(--gradient-4);"><i class="fas fa-file-alt"></i></div>
-          <h4>Documents</h4>
-          <p><span id="docCount">0</span> files</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- File View (When folder opened) -->
-    <div id="fileView" style="display: none;">
-      <button class="back-btn" onclick="closeFolder()"><i class="fas fa-arrow-left"></i> Back</button>
-      <h2 id="folderTitle" style="margin-bottom: 20px;">Folder</h2>
-      <div class="file-grid" id="fileGrid"></div>
-    </div>
-
-    <!-- Upload Button -->
-    <div style="display: flex; justify-content: center; gap: 12px; margin-top: 30px;">
-      <button class="btn btn-outline" onclick="openModal('createFolderModal')"><i class="fas fa-folder-plus"></i> New Folder</button>
-      <button class="btn btn-primary" onclick="openModal('uploadModal')"><i class="fas fa-cloud-upload-alt"></i> Upload to Telegram</button>
-    </div>
-  </div>
-
-  <!-- Bottom Navigation -->
-  <nav class="nav-bar glass">
-    <a href="#" class="nav-item active" onclick="showSection('dashboard'); return false;"><i class="fas fa-home"></i><span>Dashboard</span></a>
-    <a href="#" class="nav-item" onclick="showSection('storage'); return false;"><i class="fas fa-folder"></i><span>Storage</span></a>
-    <a href="#" class="nav-item" onclick="showSection('notes'); return false;"><i class="fas fa-sticky-note"></i><span>Notes</span></a>
-    <a href="#" class="nav-item" onclick="showSection('tools'); return false;"><i class="fas fa-tools"></i><span>Tools</span></a>
-    <a href="#" class="nav-item" onclick="showSection('profile'); return false;"><i class="fas fa-user"></i><span>Profile</span></a>
-  </nav>
-
-  <!-- Upload Modal -->
-  <div class="modal-overlay upload-modal" id="uploadModal">
-    <div class="modal-content glass">
-      <div class="modal-header">
-        <h2><i class="fas fa-cloud-upload-alt"></i> Upload Files</h2>
-        <button class="modal-close" onclick="closeModal('uploadModal')"><i class="fas fa-times"></i></button>
-      </div>
-      <div class="upload-area-multiple" id="dropZone" onclick="document.getElementById('fileInput').click()">
-        <i class="fas fa-paper-plane"></i>
-        <h3>Upload to Telegram</h3>
-        <p>Click or drag files here • Files will be saved to your Telegram</p>
-        <input type="file" id="fileInput" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
-      </div>
-      <div class="upload-progress-container" id="uploadProgress"></div>
-      <div class="upload-limit-note"><i class="fas fa-info-circle"></i> Maximum 50 files per upload. Files will be saved to Telegram.</div>
-    </div>
-  </div>
-
-  <!-- Create Folder Modal -->
-  <div class="modal-overlay" id="createFolderModal">
-    <div class="modal-content glass">
-      <div class="modal-header">
-        <h2><i class="fas fa-folder-plus"></i> Create New Folder</h2>
-        <button class="modal-close" onclick="closeModal('createFolderModal')"><i class="fas fa-times"></i></button>
-      </div>
-      <div style="padding: 10px 0;">
-        <div class="form-group">
-          <label>Folder Name</label>
-          <div class="input-wrapper">
-            <i class="fas fa-folder"></i>
-            <input type="text" id="newFolderName" placeholder="Enter folder name">
+        <div class="two-col">
+          <div class="panel">
+            <div class="section-head">
+              <div>
+                <h3>Live Storage</h3>
+                <p>Storage data updates after uploads and deletes.</p>
+              </div>
+              <strong id="storagePercent">0%</strong>
+            </div>
+            <div class="storage-bar"><div class="storage-fill" id="storageFill"></div></div>
+            <p class="panel-subtitle" id="storageText">0 MB used from 10 GB.</p>
+          </div>
+          <div class="panel">
+            <h3>Website Name Ideas</h3>
+            <p class="panel-subtitle">Short, easy names that fit a private student cloud.</p>
+            <div class="tabs" id="nameIdeas"></div>
           </div>
         </div>
-        <div class="form-group">
-          <label>Folder Type</label>
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-            <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; cursor: pointer;">
-              <input type="radio" name="folderType" value="photo" checked> <i class="fas fa-image"></i> Photos
-            </label>
-            <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; cursor: pointer;">
-              <input type="radio" name="folderType" value="video"> <i class="fas fa-video"></i> Videos
-            </label>
-            <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; cursor: pointer;">
-              <input type="radio" name="folderType" value="audio"> <i class="fas fa-music"></i> Audio
-            </label>
-            <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; cursor: pointer;">
-              <input type="radio" name="folderType" value="document"> <i class="fas fa-file-alt"></i> Documents
-            </label>
+        <div class="panel">
+          <div class="section-head">
+            <div>
+              <h3>Recent Files</h3>
+              <p>Click any file to open it with a clean preview.</p>
+            </div>
+            <button class="soft-btn" data-section-jump="media"><i class="fas fa-arrow-up-right-from-square"></i> Open Media</button>
+          </div>
+          <div class="file-grid" id="recentFiles"></div>
+        </div>
+      </section>
+
+      <section id="media" class="section">
+        <div class="panel">
+          <div class="section-head">
+            <div>
+              <h3>Media Library</h3>
+              <p>Photos, videos, PDFs, text files, and other files are separated automatically.</p>
+            </div>
+            <div class="action-row">
+              <button class="soft-btn" onclick="createFolder('media')"><i class="fas fa-folder-plus"></i> Folder</button>
+              <button class="soft-btn" onclick="renameSelectedFolder('media')"><i class="fas fa-pen"></i> Rename</button>
+              <button class="danger-btn" onclick="deleteSelectedFolder('media')"><i class="fas fa-trash"></i> Delete</button>
+            </div>
+          </div>
+          <div class="tabs" id="mediaTabs">
+            <button class="tab-btn active" data-category="all"><i class="fas fa-layer-group"></i> All</button>
+            <button class="tab-btn" data-category="photos"><i class="fas fa-image"></i> Photos</button>
+            <button class="tab-btn" data-category="videos"><i class="fas fa-video"></i> Videos</button>
+            <button class="tab-btn" data-category="pdfs"><i class="fas fa-file-pdf"></i> PDFs</button>
+            <button class="tab-btn" data-category="texts"><i class="fas fa-file-lines"></i> Text</button>
+            <button class="tab-btn" data-category="files"><i class="fas fa-box-archive"></i> Other</button>
           </div>
         </div>
-        <button class="btn btn-primary" style="width: 100%;" onclick="createFolder()">
-          <i class="fas fa-folder-plus"></i> Create Folder
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Settings Modal -->
-  <div class="modal-overlay" id="settingsModal">
-    <div class="modal-content glass">
-      <div class="modal-header">
-        <h2><i class="fas fa-cog"></i> Settings</h2>
-        <button class="modal-close" onclick="closeModal('settingsModal')"><i class="fas fa-times"></i></button>
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 12px;">
-        <a href="#" onclick="showSection('profile'); closeModal('settingsModal'); return false;" class="settings-item"><i class="fas fa-user"></i><span>Edit Profile</span><i class="fas fa-chevron-right"></i></a>
-        <a href="#" class="settings-item" onclick="openModal('telegramModal'); closeModal('settingsModal'); return false;"><i class="fab fa-telegram"></i><span>Telegram Settings</span><i class="fas fa-chevron-right"></i></a>
-        <a href="#" class="settings-item" id="adminLink" style="display:none;"><i class="fas fa-shield-alt"></i><span>Admin Panel</span><i class="fas fa-chevron-right"></i></a>
-        <a href="#" class="settings-item"><i class="fas fa-mobile-alt"></i><span>Device Management</span><i class="fas fa-chevron-right"></i></a>
-        <a href="/logout" class="settings-item logout"><i class="fas fa-sign-out-alt"></i><span>Logout</span><i class="fas fa-chevron-right"></i></a>
-      </div>
-    </div>
-  </div>
-
-  <!-- Media Player Modal -->
-  <div class="media-player-modal" id="mediaPlayer">
-    <div class="media-player-header">
-      <div class="media-player-title" id="mediaTitle">File</div>
-      <div class="media-player-close" onclick="closeMediaPlayer()"><i class="fas fa-times"></i></div>
-    </div>
-    <div class="media-player-content" id="mediaContent"></div>
-  </div>
-
-  <!-- Telegram Settings Modal -->
-  <div class="modal-overlay" id="telegramModal">
-    <div class="modal-content glass">
-      <div class="modal-header">
-        <h2><i class="fab fa-telegram"></i> Telegram Settings</h2>
-        <button class="modal-close" onclick="closeModal('telegramModal')"><i class="fas fa-times"></i></button>
-      </div>
-      <div style="padding: 10px;">
-        <div class="form-group">
-          <label>Telegram Chat ID</label>
-          <div class="input-wrapper">
-            <i class="fas fa-id-card"></i>
-            <input type="text" id="telegramChatIdInput" placeholder="Your Telegram Chat ID">
-          </div>
-          <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
-            Get your Chat ID from @AmanatFileBot
-          </p>
+        <div class="panel">
+          <div class="folders" id="mediaFolders"></div>
         </div>
-        <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="saveTelegramSettings()">
-          <i class="fas fa-save"></i> Save Settings
-        </button>
-        <div id="telegramStatus" style="margin-top: 15px; padding: 12px; border-radius: 10px; text-align: center;"></div>
+        <div class="upload-zone" onclick="document.getElementById('mediaUpload').click()">
+          <i class="fas fa-cloud-arrow-up"></i>
+          <h3>Upload files to Telegram storage</h3>
+          <p>Photos support up to 100 files at once. PDFs support up to 10 files at once.</p>
+          <input id="mediaUpload" type="file" multiple hidden>
+        </div>
+        <div class="file-grid" id="mediaFiles"></div>
+      </section>
+
+      <section id="books" class="section">
+        <div class="panel">
+          <div class="section-head">
+            <div>
+              <h3>Book Shelf</h3>
+              <p>Only PDF books and study sheets should stay here.</p>
+            </div>
+            <div class="action-row">
+              <button class="soft-btn" onclick="createFolder('books')"><i class="fas fa-folder-plus"></i> Folder</button>
+              <button class="soft-btn" onclick="renameSelectedFolder('books')"><i class="fas fa-pen"></i> Rename</button>
+              <button class="danger-btn" onclick="deleteSelectedFolder('books')"><i class="fas fa-trash"></i> Delete</button>
+            </div>
+          </div>
+          <div class="folders" id="bookFolders"></div>
+        </div>
+        <div class="upload-zone" onclick="document.getElementById('bookUpload').click()">
+          <i class="fas fa-book-open"></i>
+          <h3>Upload PDF books</h3>
+          <p>You can select up to 10 PDFs at once.</p>
+          <input id="bookUpload" type="file" multiple accept="application/pdf" hidden>
+        </div>
+        <div class="file-grid" id="bookFiles"></div>
+      </section>
+
+      <section id="notes" class="section">
+        <div class="notes-layout">
+          <div class="panel">
+            <div class="section-head">
+              <div>
+                <h3>Notes</h3>
+                <p>Simple text editor for class notes.</p>
+              </div>
+              <button class="icon-btn" onclick="newNote()" title="New note"><i class="fas fa-plus"></i></button>
+            </div>
+            <div class="note-list" id="noteList"></div>
+          </div>
+          <div class="panel form-grid">
+            <input id="noteTitle" class="note-title-field" placeholder="Note title">
+            <textarea id="noteContent" placeholder="Write your note here..."></textarea>
+            <div class="action-row">
+              <button class="primary-btn" onclick="saveNote()"><i class="fas fa-floppy-disk"></i> Save Note</button>
+              <button class="danger-btn" onclick="deleteNote()"><i class="fas fa-trash"></i> Delete</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="contacts" class="section">
+        <div class="two-col">
+          <div class="panel">
+            <div class="section-head">
+              <div>
+                <h3>Contact Files</h3>
+                <p>Upload contact lists, CSV, VCF, or related files.</p>
+              </div>
+            </div>
+            <div class="upload-zone" onclick="document.getElementById('contactUpload').click()">
+              <i class="fas fa-address-book"></i>
+              <h3>Upload contact file</h3>
+              <p>The file will be stored in the Contacts section.</p>
+              <input id="contactUpload" type="file" multiple hidden>
+            </div>
+            <div class="file-grid" id="contactFiles"></div>
+          </div>
+          <div class="panel">
+            <h3>Add Contact</h3>
+            <div class="form-grid" style="margin-top:14px;">
+              <label>Name <input id="contactName" placeholder="Full name"></label>
+              <label>Phone Number <input id="contactPhone" placeholder="+880..."></label>
+              <label>Note <textarea id="contactNote" placeholder="Classmate, teacher, office..."></textarea></label>
+              <button class="primary-btn" onclick="addContact()"><i class="fas fa-plus"></i> Add Contact</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Saved Contacts</h3>
+          <div class="contact-list" id="contactList" style="margin-top:14px;"></div>
+        </div>
+      </section>
+
+      <section id="profile" class="section">
+        <div class="two-col">
+          <div class="panel profile-card">
+            <span>Personal Profile</span>
+            <strong id="profileHeroName">Amanat User</strong>
+            <div id="profileHeroMeta">Email, phone, social links, and NID details.</div>
+          </div>
+          <div class="panel">
+            <div class="section-head">
+              <div>
+                <h3>Telegram Storage</h3>
+                <p>Your dashboard will show if Telegram is connected for file storage and OTP.</p>
+              </div>
+              <span class="status-pill off" id="profileTelegramStatus">Checking</span>
+            </div>
+            <div class="document-list">
+              <div><i class="fas fa-envelope"></i> <span id="profileEmailView">No email saved</span></div>
+              <div><i class="fas fa-phone"></i> <span id="profilePhoneView">No phone saved</span></div>
+              <div><i class="fab fa-facebook"></i> <span id="profileFacebookView">No Facebook saved</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="section-head">
+            <div>
+              <h3>Profile Information</h3>
+              <p>Save your personal, social, and NID application information.</p>
+            </div>
+            <button class="primary-btn" onclick="saveProfile()"><i class="fas fa-floppy-disk"></i> Save Profile</button>
+          </div>
+          <div class="profile-grid">
+            <label>Full Name English <input id="fullNameEnglish" placeholder="Your full name"></label>
+            <label>Full Name Bangla <input id="fullNameBangla" placeholder="বাংলা নাম"></label>
+            <label>Date of Birth <input id="dateOfBirth" type="date"></label>
+            <label>Blood Group <input id="bloodGroup" placeholder="B+"></label>
+            <label>Email <input id="email" type="email" placeholder="name@example.com"></label>
+            <label>Phone <input id="phone" placeholder="+880..."></label>
+            <label>Facebook <input id="facebook" placeholder="Facebook profile link"></label>
+            <label>Educational Qualification <input id="education" placeholder="Class / degree"></label>
+            <label>Occupation <input id="occupation" placeholder="Student"></label>
+            <label>NID Status <input id="nidStatus" placeholder="Not applied / Applied"></label>
+            <label>Father's Name <input id="fatherName" placeholder="Father's name"></label>
+            <label>Mother's Name <input id="motherName" placeholder="Mother's name"></label>
+            <label>Spouse's Name <input id="spouseName" placeholder="If married"></label>
+            <label>Present Address <textarea id="presentAddress" placeholder="Where you currently live"></textarea></label>
+            <label>Permanent Address <textarea id="permanentAddress" placeholder="Your permanent home"></textarea></label>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>NID Application Checklist</h3>
+          <p class="panel-subtitle">Common information and supporting documents for Bangladesh NID application.</p>
+          <div class="document-list" id="nidDocumentList"></div>
+        </div>
+      </section>
+
+      <section id="assistant" class="section">
+        <div class="two-col">
+          <div class="panel">
+            <div class="section-head">
+              <div>
+                <h3>Study Assistant</h3>
+                <p>Ask for summaries, exam plans, explanations, or writing help.</p>
+              </div>
+            </div>
+            <div class="chat-log" id="chatLog"></div>
+            <div class="form-grid" style="margin-top:14px;">
+              <textarea id="assistantPrompt" placeholder="Ask a study question in simple words..."></textarea>
+              <button class="primary-btn" onclick="askAssistant()"><i class="fas fa-paper-plane"></i> Send</button>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Assistant Setup</h3>
+            <p class="panel-subtitle">Add your API key in Settings first. The key is saved on this server.</p>
+            <div class="empty" style="margin-top:14px;">
+              Good questions to try: "Make a 7 day study plan", "Explain photosynthesis", or "Summarize my PDF notes after I paste text".
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tools" class="section">
+        <div class="tools-grid">
+          <div class="panel">
+            <h3><i class="fas fa-stopwatch"></i> Study Timer</h3>
+            <div class="timer-face" id="timerFace">25:00</div>
+            <div class="action-row">
+              <button class="primary-btn" onclick="startTimer()"><i class="fas fa-play"></i> Start</button>
+              <button class="soft-btn" onclick="pauseTimer()"><i class="fas fa-pause"></i> Pause</button>
+              <button class="soft-btn" onclick="resetTimer()"><i class="fas fa-rotate-left"></i> Reset</button>
+            </div>
+          </div>
+          <div class="panel">
+            <h3><i class="fas fa-calculator"></i> Calculator</h3>
+            <div class="calc-display" id="calcDisplay">0</div>
+            <div class="calc-grid" id="calcGrid"></div>
+          </div>
+          <div class="panel">
+            <h3><i class="fas fa-list-check"></i> Quick Checklist</h3>
+            <div class="form-grid" style="margin-top:14px;">
+              <label><input type="checkbox"> Read today's chapter</label>
+              <label><input type="checkbox"> Revise class notes</label>
+              <label><input type="checkbox"> Practice 20 questions</label>
+              <label><input type="checkbox"> Upload important PDFs</label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="devices" class="section">
+        <div class="panel">
+          <div class="section-head">
+            <div>
+              <h3>Device Management</h3>
+              <p>See where your account was used. Location depends on the hosting network headers.</p>
+            </div>
+            <button class="soft-btn" onclick="loadDevices()"><i class="fas fa-rotate"></i> Refresh</button>
+          </div>
+          <div class="device-list" id="deviceList"></div>
+        </div>
+      </section>
+
+      <section id="settings" class="section">
+        <div class="two-col">
+          <div class="panel">
+            <h3>Telegram Connection</h3>
+            <p class="panel-subtitle">Paste your bot token and chat ID. The status will show connected or not connected.</p>
+            <div class="form-grid" style="margin-top:14px;">
+              <label>Bot Token <input id="telegramToken" type="password" placeholder="Telegram bot token"></label>
+              <label>Chat ID <input id="telegramChatId" placeholder="Your Telegram chat ID"></label>
+              <button class="primary-btn" onclick="saveTelegram()"><i class="fas fa-plug"></i> Test and Save</button>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Assistant API</h3>
+            <p class="panel-subtitle">Use this if you want the assistant to answer from your API key.</p>
+            <div class="form-grid" style="margin-top:14px;">
+              <label>API Key <input id="assistantKey" type="password" placeholder="OpenAI API key"></label>
+              <label>Model <input id="assistantModel" placeholder="gpt-4.1-mini"></label>
+              <button class="primary-btn" onclick="saveAssistantSettings()"><i class="fas fa-floppy-disk"></i> Save Assistant</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="section-head">
+            <div>
+              <h3>Change Password</h3>
+              <p>Change your password while you are logged in.</p>
+            </div>
+          </div>
+          <div class="profile-grid">
+            <label>Current Password <input id="currentPassword" type="password" placeholder="Current password"></label>
+            <label>New Password <input id="changeNewPassword" type="password" placeholder="At least 6 characters"></label>
+          </div>
+          <div class="action-row" style="margin-top:14px;">
+            <button class="primary-btn" onclick="changePassword()"><i class="fas fa-key"></i> Change Password</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="section-head">
+            <div>
+              <h3>User Access</h3>
+              <p>Add one or two extra users. They can log in with their own password.</p>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="form-grid">
+              <label>Username <input id="newUsername" placeholder="student.friend"></label>
+              <label>Password <input id="newPassword" type="password" placeholder="New password"></label>
+              <button class="primary-btn" onclick="addUser()"><i class="fas fa-user-plus"></i> Add User</button>
+            </div>
+            <div class="contact-list" id="userList"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" id="viewerModal">
+    <div class="viewer">
+      <div class="viewer-head">
+        <strong id="viewerTitle">Preview</strong>
+        <div class="action-row">
+          <a id="downloadLink" class="soft-btn" href="#" target="_blank"><i class="fas fa-download"></i> Open</a>
+          <button class="icon-btn" onclick="closeViewer()" title="Close"><i class="fas fa-xmark"></i></button>
+        </div>
       </div>
+      <div class="viewer-body" id="viewerBody"></div>
     </div>
   </div>
 
-  <style>.settings-item{display:flex;align-items:center;gap:16px;padding:16px 20px;background:rgba(255,255,255,0.05);border-radius:14px;color:var(--text-main);text-decoration:none;transition:all 0.3s}.settings-item:hover{background:rgba(255,255,255,0.1);transform:translateX(5px)}.settings-item i:first-child{font-size:18px;width:24px}.settings-item span{flex:1}.settings-item .fa-chevron-right{color:var(--text-muted);font-size:12px}.settings-item.logout{color:var(--danger)}.settings-item.logout:hover{background:rgba(255,59,48,0.1)}</style>
+  <div class="upload-overlay" id="uploadOverlay">
+    <div class="upload-card">
+      <div class="upload-spinner"></div>
+      <h3 id="uploadTitle">Uploading to Telegram</h3>
+      <p id="uploadText">Preparing files...</p>
+      <div class="upload-progress"><span></span></div>
+    </div>
+  </div>
 
   <script src="animations.js"></script>
   <script>
-    let allFiles = [];
-    let currentFolder = null;
-    let isUploading = false;
+    const state = {
+      section: 'home',
+      category: 'all',
+      mediaFolder: '',
+      bookFolder: '',
+      files: [],
+      notes: [],
+      currentNoteId: null,
+      overview: null,
+      profile: null,
+      timerSeconds: 25 * 60,
+      timerId: null
+    };
 
-    let currentUser = null;
+    const titles = {
+      home: ['Home', 'Your files, notes, books, devices, and study tools in one clear place.'],
+      media: ['Media', 'Browse photos, videos, PDFs, text files, and other uploads.'],
+      books: ['Books', 'Keep PDF books and class materials in a separate shelf.'],
+      notes: ['Notes', 'Write and save simple study notes.'],
+      contacts: ['Contacts', 'Store contact files and important phone numbers.'],
+      profile: ['Profile', 'Your personal, social, and NID information.'],
+      assistant: ['Assistant', 'Ask for study help using your own API key.'],
+      tools: ['Tools', 'Useful student tools for everyday study work.'],
+      devices: ['Devices', 'Check active login devices and locations.'],
+      settings: ['Settings', 'Connect Telegram and configure your assistant.']
+    };
 
-    async function loadData() {
-      try {
-        // Load user info
-        const userRes = await fetch('/user-info');
-        const userData = await userRes.json();
-        currentUser = userData;
-        document.getElementById('userName').textContent = userData.name || userData.username;
-        document.getElementById('userEmail').innerHTML = `${userData.email || ''}<br><small style="color: ${userData.status === 'active' ? 'var(--success)' : 'var(--danger)'}">Status: ${userData.status || 'active'}</small>`;
-
-        // Show admin link if admin
-        if (userData.isAdmin) {
-          document.getElementById('adminLink').style.display = 'flex';
-          document.getElementById('adminLink').onclick = function() { window.location.href = '/admin.html'; };
-        }
-
-        // Load Telegram settings
-        if (userData.telegramChatId) {
-          document.getElementById('telegramChatIdInput').value = userData.telegramChatId;
-          document.getElementById('telegramStatus').innerHTML = '<span style="color: var(--success);"><i class="fas fa-check-circle"></i> Connected</span>';
-        }
-
-        // Load files
-        const res = await fetch('/files');
-        const data = await res.json();
-        allFiles = data.files || [];
-        updateStorageStats(data.storageUsed || 0);
-        updateFolderCounts();
-      } catch(e) { console.log('Error loading data'); }
+    function fmt(bytes) {
+      if (!bytes) return '0 MB';
+      const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+      return `${(bytes / Math.pow(1024, index)).toFixed(index < 2 ? 0 : 2)} ${units[index]}`;
     }
 
-    function updateStorageStats() {
-      let total = 0;
-      allFiles.forEach(f => total += f.size || 0);
-      const limit = 10 * 1024 * 1024 * 1024; // 10GB
-      const percent = Math.round((total / limit) * 100);
+    async function request(url, options = {}) {
+      const response = await fetch(url, options);
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
+      if (response.status === 401) {
+        window.location.href = '/login.html';
+        return {};
+      }
+      if (!response.ok) throw new Error(data.msg || data.message || 'Request failed.');
+      return data;
+    }
 
-      document.getElementById('storageUsed').textContent = formatSize(total);
-      document.getElementById('storageTotal').textContent = formatSize(limit);
-      document.getElementById('storagePercent').textContent = percent + '%';
-      document.getElementById('storagePercentWarn').textContent = percent;
-      document.getElementById('rippleFill').style.height = percent + '%';
-      document.getElementById('storageLimit').textContent = formatSize(limit);
+    function toast(message, type = 'info') {
+      if (window.showToast) window.showToast(message, type);
+    }
 
-      if (percent >= 80) {
-        document.getElementById('storageWarning').style.display = 'flex';
+    function setSection(section) {
+      state.section = section;
+      document.querySelectorAll('.section').forEach(el => el.classList.toggle('active', el.id === section));
+      document.querySelectorAll('.nav-button').forEach(btn => btn.classList.toggle('active', btn.dataset.section === section));
+      document.getElementById('pageTitle').textContent = titles[section][0];
+      document.getElementById('pageSubtitle').textContent = titles[section][1];
+      if (section === 'media') loadFiles();
+      if (section === 'books') loadBooks();
+      if (section === 'notes') loadNotes();
+      if (section === 'contacts') loadContacts();
+      if (section === 'profile') loadProfile();
+      if (section === 'devices') loadDevices();
+      if (section === 'settings') loadUsers();
+    }
+
+    async function loadOverview() {
+      state.overview = await request('/api/overview');
+      const { stats, counts, settings, nameIdeas } = state.overview;
+      document.getElementById('siteName').textContent = settings.siteName || 'Amanat Cloud';
+      document.getElementById('usedStorage').textContent = fmt(stats.used);
+      document.getElementById('totalFiles').textContent = stats.totalFiles;
+      document.getElementById('folderCount').textContent = counts.folders;
+      document.getElementById('contactCount').textContent = counts.contacts;
+      document.getElementById('storagePercent').textContent = `${stats.percent}%`;
+      document.getElementById('storageFill').style.width = `${stats.percent}%`;
+      document.getElementById('storageText').textContent = `${fmt(stats.used)} used from ${fmt(stats.limit)}.`;
+      document.getElementById('telegramChatId').value = settings.telegramChatId || '';
+      document.getElementById('assistantModel').value = settings.assistantModel || 'gpt-4.1-mini';
+      document.getElementById('connectStatus').innerHTML = settings.telegramConnected
+        ? '<i class="fas fa-circle" style="color:var(--green)"></i> Telegram connected'
+        : '<i class="fas fa-circle" style="color:var(--red)"></i> Telegram not connected';
+      document.getElementById('profileTelegramStatus').classList.toggle('off', !settings.telegramConnected);
+      document.getElementById('profileTelegramStatus').textContent = settings.telegramConnected ? 'Connected' : 'Not connected';
+      const username = state.overview.user?.username || 'Amanat';
+      document.getElementById('profileInitial').textContent = username.slice(0, 1).toUpperCase();
+      document.getElementById('profileNameChip').textContent = username;
+      document.getElementById('nameIdeas').innerHTML = nameIdeas.map(name => `<button class="tab-btn" type="button">${name}</button>`).join('');
+      loadRecent();
+    }
+
+    async function loadRecent() {
+      const files = await request('/api/files?category=all');
+      state.files = files;
+      renderFiles(files.slice(0, 8), 'recentFiles');
+    }
+
+    async function loadFolders(section) {
+      const folders = await request(`/api/folders?section=${section}`);
+      const target = section === 'books' ? 'bookFolders' : 'mediaFolders';
+      const activeId = section === 'books' ? state.bookFolder : state.mediaFolder;
+      document.getElementById(target).innerHTML = [
+        `<button class="folder-chip ${!activeId ? 'active' : ''}" onclick="selectFolder('${section}', '')"><i class="fas fa-layer-group"></i> All folders</button>`,
+        ...folders.map(folder => `
+          <button class="folder-chip ${activeId === folder.id ? 'active' : ''}" onclick="selectFolder('${section}', '${folder.id}')">
+            <i class="fas ${folder.icon || 'fa-folder'}"></i> ${escapeHtml(folder.name)}
+          </button>
+        `)
+      ].join('');
+    }
+
+    function selectFolder(section, folderId) {
+      if (section === 'books') {
+        state.bookFolder = folderId;
+        loadBooks();
+      } else {
+        state.mediaFolder = folderId;
+        loadFiles();
       }
     }
 
-    function updateFolderCounts() {
-      const counts = { photo: 0, video: 0, audio: 0, document: 0 };
-      allFiles.forEach(f => { if (counts[f.type] !== undefined) counts[f.type]++; });
-      document.getElementById('photoCount').textContent = toBangla(counts.photo);
-      document.getElementById('videoCount').textContent = toBangla(counts.video);
-      document.getElementById('audioCount').textContent = toBangla(counts.audio);
-      document.getElementById('docCount').textContent = toBangla(counts.document);
+    async function createFolder(section) {
+      const name = prompt('Folder name');
+      if (!name) return;
+      await request('/api/folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, section, icon: section === 'books' ? 'fa-book' : 'fa-folder' })
+      });
+      toast('Folder created.', 'success');
+      section === 'books' ? loadBooks() : loadFiles();
+      loadOverview();
     }
 
-    function openFolder(type) {
-      currentFolder = type;
-      const typeNames = { photo: 'Photos', video: 'Videos', audio: 'Audio', document: 'Documents' };
-      document.getElementById('folderTitle').textContent = typeNames[type];
-      document.getElementById('folderView').style.display = 'none';
-      document.getElementById('fileView').style.display = 'block';
+    async function renameSelectedFolder(section) {
+      const folderId = section === 'books' ? state.bookFolder : state.mediaFolder;
+      if (!folderId) return toast('Select a folder first.', 'error');
+      const name = prompt('New folder name');
+      if (!name) return;
+      await request(`/api/folders/${folderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      toast('Folder renamed.', 'success');
+      section === 'books' ? loadBooks() : loadFiles();
+    }
 
-      const folderFiles = allFiles.filter(f => f.type === type);
-      const grid = document.getElementById('fileGrid');
+    async function deleteSelectedFolder(section) {
+      const folderId = section === 'books' ? state.bookFolder : state.mediaFolder;
+      if (!folderId) return toast('Select a folder first.', 'error');
+      if (!confirm('Delete this folder? Files will stay in All folders.')) return;
+      await request(`/api/folders/${folderId}`, { method: 'DELETE' });
+      if (section === 'books') state.bookFolder = '';
+      else state.mediaFolder = '';
+      toast('Folder deleted.', 'success');
+      section === 'books' ? loadBooks() : loadFiles();
+      loadOverview();
+    }
 
-      if (folderFiles.length === 0) {
-        grid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 40px;">No files in this folder</p>';
+    async function loadFiles() {
+      await loadFolders('media');
+      const files = await request(`/api/files?category=${state.category}&folderId=${state.mediaFolder}`);
+      state.files = files;
+      renderFiles(files, 'mediaFiles');
+    }
+
+    async function loadBooks() {
+      await loadFolders('books');
+      const files = await request(`/api/files?category=books&folderId=${state.bookFolder}`);
+      renderFiles(files, 'bookFiles');
+    }
+
+    function renderFiles(files, targetId) {
+      const target = document.getElementById(targetId);
+      if (!files.length) {
+        target.innerHTML = '<div class="empty">No files here yet.</div>';
         return;
       }
-
-      grid.innerHTML = folderFiles.map((f, i) => {
-        const iconClass = f.type === 'photo' ? 'fa-image' : f.type === 'video' ? 'fa-video' : f.type === 'audio' ? 'fa-music' : 'fa-file-alt';
-        const bg = f.type === 'photo' ? 'var(--gradient-1)' : f.type === 'video' ? 'var(--gradient-2)' : f.type === 'audio' ? 'var(--gradient-3)' : 'var(--gradient-4)';
-        const thumb = f.type === 'photo' && f.telegramFileId ? `<img src="/download/${f.telegramFileId}" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-image\\'></i>'">` : `<i class="fas ${iconClass}"></i>`;
-        return `
-          <div class="file-item glass" onclick="playMedia('${f.telegramFileId}', '${f.type}', '${f.name}')">
-            <div class="file-thumb" style="background: ${bg}; -webkit-background-clip: text;">${thumb}</div>
-            <h4>${f.name}</h4>
-            <p>${formatSize(f.size || 0)}</p>
+      target.innerHTML = files.map(file => `
+        <article class="file-card" onclick='openFile(${JSON.stringify(file).replace(/'/g, '&apos;')})'>
+          <div class="thumb">${thumbHtml(file)}</div>
+          <div class="file-meta">
+            <h4>${escapeHtml(file.name)}</h4>
+            <p>${file.type.toUpperCase()} - ${fmt(file.size)}</p>
           </div>
-        `;
-      }).join('');
+        </article>
+      `).join('');
     }
 
-    function closeFolder() {
-      currentFolder = null;
-      document.getElementById('fileView').style.display = 'none';
-      document.getElementById('folderView').style.display = 'grid';
+    function thumbHtml(file) {
+      const viewUrl = `/api/files/${file.id}/view`;
+      if (file.type === 'photo') return `<img src="${viewUrl}" alt="">`;
+      if (file.type === 'video') return `<video src="${viewUrl}" muted></video>`;
+      if (file.type === 'pdf') return '<i class="fas fa-file-pdf"></i>';
+      if (file.type === 'text') return '<i class="fas fa-file-lines"></i>';
+      if (file.type === 'contact') return '<i class="fas fa-address-card"></i>';
+      return '<i class="fas fa-file"></i>';
     }
 
-    function playMedia(fileId, type, name) {
-      const player = document.getElementById('mediaPlayer');
-      const content = document.getElementById('mediaContent');
-      document.getElementById('mediaTitle').textContent = name;
-
-      if (type === 'photo') {
-        content.innerHTML = `<img src="/download/${fileId}" alt="${name}">`;
-      } else if (type === 'video') {
-        content.innerHTML = `<video controls autoplay><source src="/download/${fileId}" type="video/mp4"></video>`;
-      } else if (type === 'audio') {
-        content.innerHTML = `<audio controls autoplay><source src="/download/${fileId}" type="audio/mpeg"></audio>`;
-      }
-      player.classList.add('active');
+    function setUploadLoading(active, title = 'Uploading to Telegram', text = 'Preparing files...') {
+      document.getElementById('uploadTitle').textContent = title;
+      document.getElementById('uploadText').textContent = text;
+      document.getElementById('uploadOverlay').classList.toggle('active', active);
     }
 
-    function closeMediaPlayer() {
-      document.getElementById('mediaPlayer').classList.remove('active');
-      document.getElementById('mediaContent').innerHTML = '';
-    }
-
-    // Upload with progress (Batch 50 files)
-    document.getElementById('fileInput').addEventListener('change', async function(e) {
-      const files = Array.from(e.target.files);
-      if (files.length > 50) { showToast('Maximum 50 files!', 'error'); return; }
-      if (files.length === 0) return;
-
-      isUploading = true;
-      const progressDiv = document.getElementById('uploadProgress');
-      progressDiv.innerHTML = '';
-
-      let uploaded = 0;
-      let failed = 0;
-
-      for (let i = 0; i < files.length; i++) {
-        const f = files[i];
-        const fileId = 'file-' + i;
-
-        progressDiv.innerHTML += `
-          <div class="upload-file-item">
-            <div class="upload-file-icon" style="background: var(--gradient-1);"><i class="fas fa-file"></i></div>
-            <div class="upload-file-info">
-              <div class="upload-file-name">${f.name}</div>
-              <div class="upload-file-size">${formatSize(f.size)}</div>
-            </div>
-            <div class="upload-file-status pending" id="${fileId}">Pending...</div>
-          </div>
-        `;
-
-        const formData = new FormData();
-        formData.append('file', f);
-
-        document.getElementById(fileId).textContent = 'Uploading...';
-        document.getElementById(fileId).className = 'upload-file-status uploading';
-
-        try {
-          const res = await fetch('/upload', { method: 'POST', body: formData, credentials: 'include' });
-          const data = await res.json();
-          if (data.success) {
-            document.getElementById(fileId).textContent = 'Done ✓';
-            document.getElementById(fileId).className = 'upload-file-status done';
-            uploaded++;
-          } else {
-            document.getElementById(fileId).textContent = 'Failed';
-            document.getElementById(fileId).className = 'upload-file-status error';
-            failed++;
-          }
-        } catch(err) {
-          document.getElementById(fileId).textContent = 'Error';
-          document.getElementById(fileId).className = 'upload-file-status error';
-          failed++;
-        }
-
-        await new Promise(r => setTimeout(r, 200)); // Small delay between uploads
+    async function uploadFiles(input, category, folderId = '') {
+      const files = [...input.files];
+      if (!files.length) return;
+      if (category === 'photos' && files.length > 100) return toast('Select up to 100 photos.', 'error');
+      if ((category === 'pdfs' || category === 'books') && files.filter(file => file.type === 'application/pdf').length > 10) {
+        return toast('Select up to 10 PDFs.', 'error');
       }
 
-      isUploading = false;
-      showToast(`Uploaded: ${uploaded}, Failed: ${failed}`, uploaded > 0 ? 'success' : 'error');
-      closeModal('uploadModal');
-      loadData();
-    });
+      const form = new FormData();
+      files.forEach(file => form.append('files', file));
+      form.append('category', category);
+      form.append('folderId', folderId);
 
-    // Drag and drop
-    const dropZone = document.getElementById('dropZone');
-    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = 'var(--primary)'; });
-    dropZone.addEventListener('dragleave', () => dropZone.style.borderColor = '');
-    dropZone.addEventListener('drop', e => {
-      e.preventDefault();
-      const dt = e.dataTransfer;
-      document.getElementById('fileInput').files = dt.files;
-      document.getElementById('fileInput').dispatchEvent(new Event('change'));
-    });
-
-    function showSection(sec) {
-      if (sec === 'profile') window.location.href = '/profile.html';
-      else if (sec === 'notes') window.location.href = '/notes.html';
-      else if (sec === 'tools') window.location.href = '/tools.html';
-      else if (sec === 'storage') window.location.href = '/storage.html';
-    }
-
-    // Create folder function
-    function createFolder() {
-      const folderName = document.getElementById('newFolderName').value.trim();
-      if (!folderName) { showToast('Enter folder name!', 'error'); return; }
-
-      const folderType = document.querySelector('input[name="folderType"]:checked').value;
-
-      // Save folder to localStorage
-      let folders = JSON.parse(localStorage.getItem('amanat_folders') || '[]');
-      folders.push({ name: folderName, type: folderType, created: Date.now() });
-      localStorage.setItem('amanat_folders', JSON.stringify(folders));
-
-      showToast('Folder created!', 'success');
-      closeModal('createFolderModal');
-      document.getElementById('newFolderName').value = '';
-    }
-
-    async function saveTelegramSettings() {
-      const chatId = document.getElementById('telegramChatIdInput').value.trim();
-      if (!chatId) {
-        showToast('Please enter Chat ID', 'error');
-        return;
-      }
-
+      toast('Uploading files...', 'info');
+      setUploadLoading(true, 'Uploading to Telegram', `${files.length} file(s) are being saved.`);
       try {
-        const res = await fetch('/settings/telegram', {
+        await request('/api/files/upload', { method: 'POST', body: form });
+        toast('Upload complete.', 'success');
+        input.value = '';
+        await loadOverview();
+        if (state.section === 'media') loadFiles();
+        if (state.section === 'books') loadBooks();
+        if (state.section === 'contacts') loadContacts();
+      } catch (error) {
+        toast(error.message, 'error');
+      } finally {
+        setUploadLoading(false);
+      }
+    }
+
+    function openFile(file) {
+      const url = `/api/files/${file.id}/view`;
+      document.getElementById('viewerTitle').textContent = file.name;
+      document.getElementById('downloadLink').href = url;
+      const body = document.getElementById('viewerBody');
+      if (file.type === 'photo') body.innerHTML = `<img src="${url}" alt="${escapeHtml(file.name)}">`;
+      else if (file.type === 'video') body.innerHTML = `<video src="${url}" controls autoplay></video>`;
+      else if (file.type === 'pdf' || file.type === 'text') body.innerHTML = `<iframe src="${url}" title="${escapeHtml(file.name)}"></iframe>`;
+      else body.innerHTML = `<div class="empty">Preview is not available. Use Open to download or view the file.</div>`;
+      document.getElementById('viewerModal').classList.add('active');
+    }
+
+    function closeViewer() {
+      document.getElementById('viewerModal').classList.remove('active');
+      document.getElementById('viewerBody').innerHTML = '';
+    }
+
+    async function loadNotes() {
+      state.notes = await request('/api/notes');
+      if (!state.currentNoteId && state.notes.length) state.currentNoteId = state.notes[0].id;
+      renderNotes();
+    }
+
+    function renderNotes() {
+      document.getElementById('noteList').innerHTML = state.notes.length ? state.notes.map(note => `
+        <div class="note-item ${note.id === state.currentNoteId ? 'active' : ''}" onclick="selectNote('${note.id}')">
+          <strong>${escapeHtml(note.title)}</strong>
+          <span>${new Date(note.updatedAt).toLocaleString()}</span>
+        </div>
+      `).join('') : '<div class="empty">No notes yet.</div>';
+      const note = state.notes.find(item => item.id === state.currentNoteId);
+      document.getElementById('noteTitle').value = note?.title || '';
+      document.getElementById('noteContent').value = note?.content || '';
+    }
+
+    function selectNote(id) {
+      state.currentNoteId = id;
+      renderNotes();
+    }
+
+    function newNote() {
+      state.currentNoteId = null;
+      document.getElementById('noteTitle').value = '';
+      document.getElementById('noteContent').value = '';
+    }
+
+    async function saveNote() {
+      const note = await request('/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: state.currentNoteId,
+          title: document.getElementById('noteTitle').value || 'Untitled note',
+          content: document.getElementById('noteContent').value
+        })
+      });
+      state.currentNoteId = note.note.id;
+      toast('Note saved.', 'success');
+      loadNotes();
+      loadOverview();
+    }
+
+    async function deleteNote() {
+      if (!state.currentNoteId) return;
+      await request(`/api/notes/${state.currentNoteId}`, { method: 'DELETE' });
+      state.currentNoteId = null;
+      toast('Note deleted.', 'success');
+      loadNotes();
+      loadOverview();
+    }
+
+    async function loadContacts() {
+      const [contacts, files] = await Promise.all([
+        request('/api/contacts'),
+        request('/api/files?category=contacts')
+      ]);
+      document.getElementById('contactList').innerHTML = contacts.length ? contacts.map(contact => `
+        <div class="contact-row">
+          <div><div class="row-title">${escapeHtml(contact.name)}</div><div class="row-muted">${escapeHtml(contact.phone)}</div></div>
+          <div class="row-muted">${escapeHtml(contact.note || '')}</div>
+        </div>
+      `).join('') : '<div class="empty">No contacts saved.</div>';
+      renderFiles(files, 'contactFiles');
+    }
+
+    async function addContact() {
+      await request('/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: document.getElementById('contactName').value,
+          phone: document.getElementById('contactPhone').value,
+          note: document.getElementById('contactNote').value
+        })
+      });
+      document.getElementById('contactName').value = '';
+      document.getElementById('contactPhone').value = '';
+      document.getElementById('contactNote').value = '';
+      toast('Contact saved.', 'success');
+      loadContacts();
+      loadOverview();
+    }
+
+    async function loadProfile() {
+      const profile = await request('/api/profile');
+      state.profile = profile;
+      const fields = [
+        'fullNameEnglish',
+        'fullNameBangla',
+        'dateOfBirth',
+        'email',
+        'phone',
+        'facebook',
+        'bloodGroup',
+        'education',
+        'occupation',
+        'fatherName',
+        'motherName',
+        'spouseName',
+        'presentAddress',
+        'permanentAddress',
+        'nidStatus'
+      ];
+      fields.forEach((field) => {
+        const element = document.getElementById(field);
+        if (element) element.value = profile[field] || '';
+      });
+      const name = profile.fullNameEnglish || profile.username || 'Amanat User';
+      document.getElementById('profileHeroName').textContent = name;
+      document.getElementById('profileHeroMeta').textContent = `${profile.education || 'Student'} - ${profile.occupation || 'Study profile'}`;
+      document.getElementById('profileEmailView').textContent = profile.email || 'No email saved';
+      document.getElementById('profilePhoneView').textContent = profile.phone || 'No phone saved';
+      document.getElementById('profileFacebookView').textContent = profile.facebook || 'No Facebook saved';
+      document.getElementById('profileNameChip').textContent = name.split(' ')[0] || 'Profile';
+      document.getElementById('profileInitial').textContent = name.slice(0, 1).toUpperCase();
+      document.getElementById('nidDocumentList').innerHTML = (profile.documents || []).map(item => `
+        <div><i class="fas fa-check-circle" style="color:var(--green)"></i> ${escapeHtml(item)}</div>
+      `).join('');
+    }
+
+    async function saveProfile() {
+      const fields = [
+        'fullNameEnglish',
+        'fullNameBangla',
+        'dateOfBirth',
+        'email',
+        'phone',
+        'facebook',
+        'bloodGroup',
+        'education',
+        'occupation',
+        'fatherName',
+        'motherName',
+        'spouseName',
+        'presentAddress',
+        'permanentAddress',
+        'nidStatus'
+      ];
+      const payload = {};
+      fields.forEach((field) => payload[field] = document.getElementById(field).value);
+      await request('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      toast('Profile saved.', 'success');
+      loadProfile();
+    }
+
+    async function askAssistant() {
+      const prompt = document.getElementById('assistantPrompt').value.trim();
+      if (!prompt) return;
+      addChat(prompt, 'user');
+      document.getElementById('assistantPrompt').value = '';
+      try {
+        const result = await request('/api/assistant/chat', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ telegramChatId: chatId })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: prompt })
         });
-        const data = await res.json();
-        if (data.success) {
-          document.getElementById('telegramStatus').innerHTML = '<span style="color: var(--success);"><i class="fas fa-check-circle"></i> Connected</span>';
-          showToast('Telegram settings saved!', 'success');
-        } else {
-          showToast(data.msg || 'Error saving settings', 'error');
-        }
-      } catch(e) {
-        showToast('Network error', 'error');
+        addChat(result.reply, 'assistant');
+      } catch (error) {
+        addChat(error.message, 'assistant');
       }
     }
 
-    loadData();
+    function addChat(text, role) {
+      const log = document.getElementById('chatLog');
+      const item = document.createElement('div');
+      item.className = `message ${role === 'user' ? 'user' : ''}`;
+      item.textContent = text;
+      log.appendChild(item);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    async function loadDevices() {
+      const devices = await request('/api/devices');
+      document.getElementById('deviceList').innerHTML = devices.length ? devices.map(device => `
+        <div class="device-row">
+          <div>
+            <div class="row-title"><i class="fas fa-laptop"></i> ${escapeHtml(device.name || 'Device')}</div>
+            <div class="row-muted">${escapeHtml(device.location || 'Unknown location')} - ${escapeHtml(device.userAgent || '')}</div>
+            <div class="row-muted">Last login: ${device.lastLogin ? new Date(device.lastLogin).toLocaleString() : 'Unknown'}</div>
+          </div>
+          <span class="status-pill">${escapeHtml(device.status || 'active')}</span>
+        </div>
+      `).join('') : '<div class="empty">Login once to record this device.</div>';
+    }
+
+    async function saveTelegram() {
+      try {
+        const data = await request('/api/settings/telegram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            telegramBotToken: document.getElementById('telegramToken').value,
+            telegramChatId: document.getElementById('telegramChatId').value
+          })
+        });
+        toast(data.msg || 'Telegram connected.', 'success');
+        loadOverview();
+      } catch (error) {
+        toast(error.message, 'error');
+        loadOverview();
+      }
+    }
+
+    async function saveAssistantSettings() {
+      await request('/api/settings/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assistantApiKey: document.getElementById('assistantKey').value,
+          assistantModel: document.getElementById('assistantModel').value
+        })
+      });
+      toast('Assistant settings saved.', 'success');
+    }
+
+    async function changePassword() {
+      try {
+        await request('/api/password/change', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currentPassword: document.getElementById('currentPassword').value,
+            newPassword: document.getElementById('changeNewPassword').value
+          })
+        });
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('changeNewPassword').value = '';
+        toast('Password changed.', 'success');
+      } catch (error) {
+        toast(error.message, 'error');
+      }
+    }
+
+    async function logout() {
+      await fetch('/logout', { method: 'POST' });
+      window.location.href = '/login.html';
+    }
+
+    async function loadUsers() {
+      const users = await request('/api/users');
+      document.getElementById('userList').innerHTML = users.length ? users.map(user => `
+        <div class="contact-row">
+          <div><div class="row-title">${escapeHtml(user.username)}</div><div class="row-muted">Created: ${user.createdAt ? new Date(user.createdAt).toLocaleString() : 'Old user'}</div></div>
+          <span class="status-pill ${user.status === 'suspended' ? 'off' : ''}">${escapeHtml(user.status)}</span>
+        </div>
+      `).join('') : '<div class="empty">No extra users yet.</div>';
+    }
+
+    async function addUser() {
+      try {
+        await request('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('newUsername').value.trim(),
+            password: document.getElementById('newPassword').value
+          })
+        });
+        document.getElementById('newUsername').value = '';
+        document.getElementById('newPassword').value = '';
+        toast('User added.', 'success');
+        loadUsers();
+      } catch (error) {
+        toast(error.message, 'error');
+      }
+    }
+
+    function startTimer() {
+      if (state.timerId) return;
+      state.timerId = setInterval(() => {
+        state.timerSeconds = Math.max(0, state.timerSeconds - 1);
+        renderTimer();
+        if (state.timerSeconds === 0) pauseTimer();
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      clearInterval(state.timerId);
+      state.timerId = null;
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      state.timerSeconds = 25 * 60;
+      renderTimer();
+    }
+
+    function renderTimer() {
+      const minutes = Math.floor(state.timerSeconds / 60).toString().padStart(2, '0');
+      const seconds = (state.timerSeconds % 60).toString().padStart(2, '0');
+      document.getElementById('timerFace').textContent = `${minutes}:${seconds}`;
+    }
+
+    function initCalculator() {
+      const keys = ['7','8','9','/','4','5','6','*','1','2','3','-','0','.','=','+','C'];
+      document.getElementById('calcGrid').innerHTML = keys.map(key => `<button type="button" onclick="calcPress('${key}')">${key}</button>`).join('');
+    }
+
+    function calcPress(key) {
+      const display = document.getElementById('calcDisplay');
+      if (key === 'C') return display.textContent = '0';
+      if (key === '=') {
+        try {
+          display.textContent = Function(`"use strict"; return (${display.textContent})`)();
+        } catch {
+          display.textContent = 'Error';
+        }
+        return;
+      }
+      display.textContent = display.textContent === '0' || display.textContent === 'Error' ? key : display.textContent + key;
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      }[char]));
+    }
+
+    document.querySelectorAll('.nav-button, [data-section-jump]').forEach(button => {
+      button.addEventListener('click', () => setSection(button.dataset.section || button.dataset.sectionJump));
+    });
+
+    document.querySelectorAll('#mediaTabs .tab-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('#mediaTabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        state.category = button.dataset.category;
+        loadFiles();
+      });
+    });
+
+    document.getElementById('mediaUpload').addEventListener('change', (event) => {
+      const category = state.category === 'all' ? 'files' : state.category;
+      uploadFiles(event.target, category, state.mediaFolder);
+    });
+    document.getElementById('bookUpload').addEventListener('change', (event) => uploadFiles(event.target, 'books', state.bookFolder));
+    document.getElementById('contactUpload').addEventListener('change', (event) => uploadFiles(event.target, 'contacts'));
+    document.getElementById('viewerModal').addEventListener('click', (event) => {
+      if (event.target.id === 'viewerModal') closeViewer();
+    });
+
+    initCalculator();
+    renderTimer();
+    loadOverview();
+    loadProfile();
+    loadFiles();
+    setInterval(loadOverview, 30000);
   </script>
 </body>
 </html>
